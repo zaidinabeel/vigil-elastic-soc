@@ -1,3 +1,5 @@
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import React, { useState, useEffect, useRef } from "react";
 import { 
   Shield, 
@@ -1192,396 +1194,350 @@ export function App() {
     }
   };
 
-  // Executive 2-Page Official CERT-In Annexure-1 Binary PDF Generator
-  const generateClientCertInPdf = (sc: ScenarioConfig): Blob => {
-    const w = 595.28; // A4 width in points
-    const h = 841.89; // A4 height in points
-    const margin_x = 40.0;
-    const content_w = w - 2 * margin_x;
+  // Official CERT-In Annexure-1 Publication-Grade PDF Generator using jsPDF & autoTable
+  const generateClientCertInPdf = (sc: ScenarioConfig) => {
+    const doc = new jsPDF({
+      orientation: "portrait",
+      unit: "pt",
+      format: "a4"
+    });
 
-    const escape = (text: any) =>
-      String(text || "")
-        .replace(/\\/g, "\\\\")
-        .replace(/\(/g, "\\(")
-        .replace(/\)/g, "\\)")
-        .replace(/\r/g, "");
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const marginX = 36;
+    const contentWidth = pageWidth - 2 * marginX;
 
     const nowStr = new Date().toISOString().replace("T", " ").slice(0, 19) + " UTC";
     const nowIst = new Date(Date.now() + 5.5 * 3600 * 1000).toISOString().replace("T", " ").slice(0, 19) + " IST";
 
-    const inc_id = sc.incident_id;
-    const severity = sc.severity;
+    const incId = sc.incident_id;
     const category = sc.step1?.certin_category || "CIAD-2022-04 Unauthorized Access & Payment Gateway Fraud";
-    const threat_tactic = sc.threat_tactic;
-    const mitre_id = sc.mitre_id;
-    const direct_inr = Number(sc.direct_exposure_inr || 0);
-    const attacker_ips = sc.attacker_ips || [sc.attacker_ip];
-    const target_assets = sc.target_assets || sc.affected_systems || ["10.14.8.102 (api-gw.bank.internal)"];
-    const comp_creds = sc.compromised_credentials || sc.compromised_user;
-    const payload_hash = sc.payload_hash || "SHA256: 4f98d9e2b4510aa18992cde8710b14ea987b213f";
-    const affected_accounts = sc.step3?.affected_accounts_total || 18;
-    const corp_accounts = sc.step3?.corporate_count || 4;
-    const hni_accounts = sc.step3?.hni_count || 14;
-    const payment_channel = sc.payment_channel || sc.step3?.account_examples || "Core Banking & Inter-Bank Switch";
+    const directINR = Number(sc.direct_exposure_inr || 0);
+    const attackerIps = sc.attacker_ips || [sc.attacker_ip];
+    const targetAssets = sc.target_assets || sc.affected_systems || ["10.14.8.102 (api-gw.bank.internal)"];
+    const compCreds = sc.compromised_credentials || sc.compromised_user;
+    const payloadHash = sc.payload_hash || "SHA256: 4f98d9e2b4510aa18992cde8710b14ea987b213f";
+    const affectedAccounts = sc.step3?.affected_accounts_total || 18;
+    const corpAccounts = sc.step3?.corporate_count || 4;
+    const hniAccounts = sc.step3?.hni_count || 14;
+    const paymentChannel = sc.payment_channel || sc.step3?.account_examples || "Core Banking & Inter-Bank Switch";
     const actions = sc.step4?.actions || [];
 
-    // =========================================================================
-    // PAGE 1 STREAM
-    // =========================================================================
-    const p1: string[] = [];
-    let y1 = h - 36.0;
+    // Helper: Draw Official Header on Page 1
+    const drawOfficialHeader = () => {
+      // Deep Navy Header Box
+      doc.setFillColor(15, 30, 56);
+      doc.roundedRect(marginX, 32, contentWidth, 68, 4, 4, "F");
 
-    // Official Top Banner
-    p1.push(`q
-% Top Decorative Header Band
-0.08 0.16 0.28 rg
-${margin_x} ${y1 - 62} ${content_w} 62 re f
+      // Emblem / Government of India Subtitle
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8);
+      doc.setTextColor(203, 213, 225);
+      doc.text("GOVERNMENT OF INDIA  |  MINISTRY OF ELECTRONICS & INFORMATION TECHNOLOGY", marginX + 14, 48);
 
-1 1 1 rg
-BT
-/F2 11 Tf
-${margin_x + 16} ${y1 - 18} Td
-(GOVERNMENT OF INDIA | MINISTRY OF ELECTRONICS & INFORMATION TECHNOLOGY) Tj
-ET
+      // CERT-In Main Title
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(13);
+      doc.setTextColor(56, 189, 248);
+      doc.text("INDIAN COMPUTER EMERGENCY RESPONSE TEAM (CERT-In)", marginX + 14, 66);
 
-0.35 0.75 1 rg
-BT
-/F2 13.5 Tf
-${margin_x + 16} ${y1 - 35} Td
-(INDIAN COMPUTER EMERGENCY RESPONSE TEAM (CERT-In)) Tj
-ET
+      // Annexure Title
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8.5);
+      doc.setTextColor(255, 255, 255);
+      doc.text("CYBER SECURITY INCIDENT REPORTING FORM — ANNEXURE 1", marginX + 14, 80);
 
-0.85 0.9 0.98 rg
-BT
-/F2 8.5 Tf
-${margin_x + 16} ${y1 - 48} Td
-(CYBER SECURITY INCIDENT REPORTING FORM - ANNEXURE 1) Tj
-/F1 6.5 Tf
-${margin_x + 16} ${y1 - 57} Td
-(Under Section 70B of Information Technology Act, 2000 & CERT-In Directions 2022) Tj
-ET
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(6.5);
+      doc.setTextColor(148, 163, 184);
+      doc.text("Mandatory Statutory Filing under Section 70B of IT Act 2000 & CERT-In Directions F.No. 20(3)/2022-CERT-In", marginX + 14, 91);
 
-% 6-Hour SLA Badge
-0.8 0.12 0.12 rg
-${w - margin_x - 120} ${y1 - 52} 104 38 re f
-1 1 1 rg
-BT
-/F2 7.5 Tf
-${w - margin_x - 114} ${y1 - 25} Td
-(6-HOUR STATUTORY SLA) Tj
-/F1 6.5 Tf
-${w - margin_x - 114} ${y1 - 36} Td
-(Status: FILED IN TIME) Tj
-/F2 6.5 Tf
-${w - margin_x - 114} ${y1 - 46} Td
-(Elapsed: 4.2 Minutes) Tj
-ET
-Q
-`);
-    y1 -= 76.0;
-
-    const draw_section_header = (stream_arr: string[], y_pos: number, num_str: string, title_str: string) => {
-      stream_arr.push(`q
-% Section Header Bar
-0.92 0.94 0.97 rg
-${margin_x} ${y_pos - 15} ${content_w} 15 re f
-0.08 0.16 0.28 rg
-${margin_x} ${y_pos - 15} 3.5 15 re f
-0.08 0.16 0.28 rg
-BT
-/F2 8.5 Tf
-${margin_x + 8} ${y_pos - 11} Td
-(${escape(num_str)} ${escape(title_str)}) Tj
-ET
-Q
-`);
-      return y_pos - 20.0;
+      // SLA Badge on Right Side
+      doc.setFillColor(220, 38, 38);
+      doc.roundedRect(pageWidth - marginX - 110, 40, 96, 50, 3, 3, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(7);
+      doc.setTextColor(255, 255, 255);
+      doc.text("6-HOUR STATUTORY SLA", pageWidth - marginX - 104, 54);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(6.5);
+      doc.text("STATUS: FILED IN TIME", pageWidth - marginX - 104, 68);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(6.5);
+      doc.text("LATENCY: 4.2 MINS", pageWidth - marginX - 104, 80);
     };
 
-    const draw_clean_row = (stream_arr: string[], y_pos: number, label: string, value: any, is_highlight = false, row_idx = 0) => {
-      const bg = row_idx % 2 === 0 ? "1 1 1" : "0.97 0.98 0.99";
-      stream_arr.push(`q
-% Row Background
-${bg} rg
-${margin_x} ${y_pos - 13} ${content_w} 13 re f
-% Bottom subtle divider line
-0.88 0.91 0.94 RG 0.4 w
-${margin_x} ${y_pos - 13} m ${w - margin_x} ${y_pos - 13} l S
+    drawOfficialHeader();
 
-% Label Column
-0.25 0.32 0.4 rg
-BT
-/F2 7.2 Tf
-${margin_x + 6} ${y_pos - 9.5} Td
-(${escape(label)}) Tj
-ET
+    let startY = 110;
 
-% Value Column
-${is_highlight ? "0.8 0.1 0.1 rg" : "0.08 0.12 0.18 rg"}
-BT
-/${is_highlight ? "F2" : "F1"} 7.2 Tf
-${margin_x + 160} ${y_pos - 9.5} Td
-(${escape(String(value).slice(0, 85))}) Tj
-ET
-Q
-`);
-      return y_pos - 13.5;
-    };
-
-    // PART 1: Organisation Particulars
-    y1 = draw_section_header(p1, y1, "1.0", "ORGANISATION PARTICULARS & CISO NODAL CONTACT");
-    y1 = draw_clean_row(p1, y1, "1.1 Name of Organisation", "Apex Commercial Bank of India Ltd", false, 0);
-    y1 = draw_clean_row(p1, y1, "1.2 Regulatory Category", "Banking & Financial Services (Scheduled Commercial Bank - RBI Supervised)", false, 1);
-    y1 = draw_clean_row(p1, y1, "1.3 CISO / Designated Nodal Officer", "Rajeshwar Varma (Chief Information Security Officer)", false, 2);
-    y1 = draw_clean_row(p1, y1, "1.4 24x7 SOC Emergency Contact", "ciso-office@apexbank.in | soc-hotline@apexbank.in | +91-22-6889-0100", false, 3);
-    y1 = draw_clean_row(p1, y1, "1.5 Primary Data Center Location", "Primary DC: Navi Mumbai Tier-IV | DR: Hyderabad | Cloud: AWS ap-south-1", false, 4);
-    y1 -= 6.0;
-
-    // PART 2: Incident Identification & Classification
-    y1 = draw_section_header(p1, y1, "2.0", "INCIDENT IDENTIFICATION & REGULATORY CLASSIFICATION");
-    y1 = draw_clean_row(p1, y1, "2.1 Incident Reference ID", inc_id, true, 0);
-    y1 = draw_clean_row(p1, y1, "2.2 Detection Timestamp (UTC / IST)", `${nowStr}  /  ${nowIst}`, false, 1);
-    y1 = draw_clean_row(p1, y1, "2.3 Mandatory CERT-In Category", category, true, 2);
-    y1 = draw_clean_row(p1, y1, "2.4 Severity & Escalation Level", `${severity} (Immediate Notification to Board Risk Committee)`, false, 3);
-    y1 = draw_clean_row(p1, y1, "2.5 MITRE ATT&CK Classification", `${threat_tactic} (${mitre_id})`, false, 4);
-    y1 = draw_clean_row(p1, y1, "2.6 Impacted Banking Infrastructure", payment_channel, false, 5);
-    y1 -= 6.0;
-
-    // PART 3: Technical Forensics & Multi-IP IoCs
-    y1 = draw_section_header(p1, y1, "3.0", "TECHNICAL FORENSICS & MULTI-IP INDICATORS OF COMPROMISE (IoCs)");
-    y1 = draw_clean_row(p1, y1, "3.1 Primary Attacker / C2 IP", attacker_ips[0] || "198.51.100.44", true, 0);
-    if (attacker_ips.length > 1) {
-      y1 = draw_clean_row(p1, y1, "3.2 Proxy / Tor Anonymizer Nodes", attacker_ips.slice(1, 3).join(", "), true, 1);
-    }
-    if (attacker_ips.length > 3) {
-      y1 = draw_clean_row(p1, y1, "3.3 Additional Botnet / Relay IPs", attacker_ips.slice(3, 5).join(", "), true, 2);
-    }
-    y1 = draw_clean_row(p1, y1, "3.4 Affected Internal Asset Endpoints", target_assets.slice(0, 2).join(", "), false, 3);
-    y1 = draw_clean_row(p1, y1, "3.5 Compromised Credential / Token", comp_creds, false, 4);
-    y1 = draw_clean_row(p1, y1, "3.6 Malicious Signature / Hash", payload_hash, false, 5);
-    y1 = draw_clean_row(p1, y1, "3.7 Autonomous Correlation Tool", "VIGIL ES|QL Forensic Correlator (14.2ms Execution Latency)", false, 6);
-
-    // Page 1 Footer
-    p1.push(`q
-0.8 0.85 0.9 RG 0.5 w
-${margin_x} 32 m ${w - margin_x} 32 l S
-0.4 0.45 0.52 rg
-BT
-/F1 6.8 Tf
-${margin_x} 20 Td
-(VIGIL Autonomous AI SOC Analyst | Statutory Filing under Section 70B IT Act 2000 | Form Annexure-1) Tj
-${w - margin_x - 65} 20 Td
-(Page 1 of 2) Tj
-ET
-Q
-`);
-
-    // =========================================================================
-    // PAGE 2 STREAM
-    // =========================================================================
-    const p2: string[] = [];
-    let y2 = h - 36.0;
-
-    // Official Page 2 Header Band
-    p2.push(`q
-0.08 0.16 0.28 rg
-${margin_x} ${y2 - 36} ${content_w} 36 re f
-
-1 1 1 rg
-BT
-/F2 10.5 Tf
-${margin_x + 14} ${y2 - 16} Td
-(INDIAN COMPUTER EMERGENCY RESPONSE TEAM (CERT-In) - ANNEXURE 1 CONTINUED) Tj
-ET
-
-0.35 0.75 1 rg
-BT
-/F2 7.5 Tf
-${margin_x + 14} ${y2 - 28} Td
-(INCIDENT REFERENCE: ${escape(inc_id)} | SECTOR: BANKING & FINANCIAL SERVICES \\(BFSI\\)) Tj
-ET
-Q
-`);
-    y2 -= 50.0;
-
-    // PART 4: Rupee Financial Exposure & Impact Assessment
-    y2 = draw_section_header(p2, y2, "4.0", "RUPEE FINANCIAL EXPOSURE & IMPACT ASSESSMENT");
-    y2 = draw_clean_row(p2, y2, "4.1 Direct Rupee Funds at Risk (INR)", `Rs. ${direct_inr.toLocaleString("en-IN")}.00`, (direct_inr > 0), 0);
-    y2 = draw_clean_row(p2, y2, "4.2 Customer Blast Radius Breakdown", `${affected_accounts} Total Accounts (${corp_accounts} Corporate, ${hni_accounts} HNI / Private Wealth)`, false, 1);
-    y2 = draw_clean_row(p2, y2, "4.3 Customer PII / Statement Leakage", (direct_inr > 0 ? "NO PII EXFILTRATED (Intercepted before clearance)" : "Zero Customer PII Impact"), false, 2);
-    y2 = draw_clean_row(p2, y2, "4.4 Payment Switch & Ledger Status", "OPERATIONAL (Unauthorized batch quarantined in-flight)", false, 3);
-    y2 = draw_clean_row(p2, y2, "4.5 Business Continuity Status", "Green / Normal (No disruption to retail banking customers)", false, 4);
-    y2 -= 6.0;
-
-    // PART 5: Remedial, Mitigation & Containment Actions Executed
-    y2 = draw_section_header(p2, y2, "5.0", "REMEDIAL, MITIGATION & CONTAINMENT ACTIONS EXECUTED");
-    if (actions.length > 0) {
-      actions.slice(0, 4).forEach((act, idx) => {
-        y2 = draw_clean_row(p2, y2, `5.${idx + 1} ${act.title}`, `${act.description} [EXECUTED]`, true, idx);
-      });
-    } else {
-      y2 = draw_clean_row(p2, y2, "5.1 Perimeter Firewall Action", "Null-routed malicious ingress IPs on edge firewall & Cloud WAF [EXECUTED]", true, 0);
-      y2 = draw_clean_row(p2, y2, "5.2 IAM Session Revocation", "OAuth2 Bearer token revoked & forced password rotation [EXECUTED]", true, 1);
-    }
-    y2 = draw_clean_row(p2, y2, "5.5 Digital Evidence Preservation", "SEALED in SHA-256 Immutable Audit Ledger & AWS S3 WORM Storage", false, 4);
-    y2 = draw_clean_row(p2, y2, "5.6 Real-Time Telemetry Stream", "Elastic Cloud live monitoring active (1-minute heartbeat telemetry)", false, 5);
-    y2 -= 8.0;
-
-    // PART 6: Statutory Declaration & Nodal Officer Digital Authorization
-    y2 = draw_section_header(p2, y2, "6.0", "STATUTORY DECLARATION & FORMAL NODAL SIGN-OFF");
-    
-    const dec_h = 100.0;
-    p2.push(`q
-% Formal Certificate Border
-0.96 0.97 0.99 rg
-${margin_x} ${y2 - dec_h} ${content_w} ${dec_h} re f
-0.82 0.86 0.9 RG 0.8 w
-${margin_x} ${y2 - dec_h} ${content_w} ${dec_h} re S
-
-% Left Accent Ribbon
-0.08 0.16 0.28 rg
-${margin_x} ${y2 - dec_h} 3.5 ${dec_h} re f
-
-% Declaration Legal Text
-0.2 0.26 0.35 rg
-BT
-/F2 7 Tf
-${margin_x + 12} ${y2 - 14} Td
-(STATUTORY DECLARATION UNDER SECTION 70B OF IT ACT, 2000 & CERT-In DIRECTIONS 2022:) Tj
-/F1 6.5 Tf
-${margin_x + 12} ${y2 - 26} Td
-(I hereby confirm that this cyber security incident notification has been generated and validated by the VIGIL) Tj
-${margin_x + 12} ${y2 - 36} Td
-(Autonomous Incident Response Engine in coordination with the CISO Nodal Office. All indicators of compromise,) Tj
-${margin_x + 12} ${y2 - 46} Td
-(affected asset vectors, rupee exposure figures, and containment actions are authentic and cryptographically sealed.) Tj
-ET
-
-% Digital Signature & Authorization
-0.08 0.16 0.28 rg
-BT
-/F2 7.5 Tf
-${margin_x + 12} ${y2 - 66} Td
-(Digitally Authorized & Submitted by:) Tj
-/F2 8.5 Tf
-${margin_x + 12} ${y2 - 79} Td
-(Rajeshwar Varma | Chief Information Security Officer) Tj
-/F1 6.8 Tf
-${margin_x + 12} ${y2 - 90} Td
-(Apex Commercial Bank of India Ltd | Certified Public Key: 0x8F92..BC10 | Mumbai HQ) Tj
-ET
-
-% Official Seal Badge
-0.8 0.12 0.12 rg
-${w - margin_x - 120} ${y2 - 90} 108 34 re f
-1 1 1 rg
-BT
-/F2 8 Tf
-${w - margin_x - 112} {y2 - 68} Td
-(OFFICIALLY SEALED) Tj
-/F1 6 Tf
-${w - margin_x - 112} {y2 - 78} Td
-(SHA-256 HASH VERIFIED) Tj
-/F1 5.8 Tf
-${w - margin_x - 112} {y2 - 86} Td
-(S3 WORM OBJECT LOCK) Tj
-ET
-Q
-`);
-
-    // Page 2 Footer
-    p2.push(`q
-0.8 0.85 0.9 RG 0.5 w
-${margin_x} 32 m {w - margin_x} 32 l S
-0.4 0.45 0.52 rg
-BT
-/F1 6.8 Tf
-${margin_x} 20 Td
-(VIGIL Autonomous AI SOC Analyst | Statutory Filing under Section 70B IT Act 2000 | Form Annexure-1) Tj
-${w - margin_x - 65} 20 Td
-(Page 2 of 2) Tj
-ET
-Q
-`);
-
-    const page1_stream = p1.join("\n");
-    const page2_stream = p2.join("\n");
-    const len1 = new TextEncoder().encode(page1_stream).length;
-    const len2 = new TextEncoder().encode(page2_stream).length;
-
-    const objs = [
-      `<< /Type /Catalog /Pages 2 0 R >>`,
-      `<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >>`,
-      `<< /Type /Page /Parent 2 0 R
-/MediaBox [0 0 ${w} ${h}]
-/Resources <<
-  /Font <<
-    /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
-    /F2 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
-  >>
->>
-/Contents 5 0 R >>`,
-      `<< /Type /Page /Parent 2 0 R
-/MediaBox [0 0 ${w} ${h}]
-/Resources <<
-  /Font <<
-    /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
-    /F2 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
-  >>
->>
-/Contents 6 0 R >>`,
-      `<< /Length ${len1} >>\nstream\n${page1_stream}\nendstream`,
-      `<< /Length ${len2} >>\nstream\n${page2_stream}\nendstream`
-    ];
-
-    let pdfStr = "%PDF-1.4\n%\xE2\xE3\xCF\xD3\n";
-    const offsets: number[] = [];
-
-    objs.forEach((obj, idx) => {
-      offsets.push(new TextEncoder().encode(pdfStr).length);
-      pdfStr += `${idx + 1} 0 obj\n${obj}\nendobj\n`;
+    // SECTION 1.0 TABLE
+    autoTable(doc, {
+      startY: startY,
+      margin: { left: marginX, right: marginX },
+      head: [
+        [
+          {
+            content: "1.0  ORGANISATION PARTICULARS & CISO NODAL CONTACT",
+            colSpan: 2,
+            styles: { fillColor: [30, 58, 102], textColor: [255, 255, 255], fontStyle: "bold", fontSize: 8.5 }
+          }
+        ]
+      ],
+      body: [
+        ["1.1 Name of Organisation", "Apex Commercial Bank of India Ltd"],
+        ["1.2 Regulatory Category", "Banking & Financial Services (Scheduled Commercial Bank — RBI Supervised)"],
+        ["1.3 CISO / Designated Nodal Officer", "Rajeshwar Varma (Chief Information Security Officer)"],
+        ["1.4 24x7 SOC Emergency Contact", "ciso-office@apexbank.in  |  soc-hotline@apexbank.in  |  +91-22-6889-0100"],
+        ["1.5 Data Center & Cloud Infrastructure", "Primary DC: Navi Mumbai Tier-IV  |  DR: Hyderabad  |  Cloud: AWS ap-south-1"]
+      ],
+      theme: "grid",
+      styles: { fontSize: 7.2, cellPadding: 3.5, textColor: [30, 41, 59], lineColor: [226, 232, 240], lineWidth: 0.5 },
+      columnStyles: {
+        0: { cellWidth: 155, fontStyle: "bold", textColor: [71, 85, 105], fillColor: [248, 250, 252] },
+        1: { cellWidth: "auto" }
+      }
     });
 
-    const xrefPos = new TextEncoder().encode(pdfStr).length;
-    pdfStr += `xref\n0 ${objs.length + 1}\n0000000000 65535 f \n`;
-    offsets.forEach(off => {
-      pdfStr += `${String(off).padStart(10, "0")} 00000 n \n`;
-    });
-    pdfStr += `trailer\n<< /Size ${objs.length + 1}\n   /Root 1 0 R\n>>\nstartxref\n${xrefPos}\n%%EOF\n`;
+    startY = (doc as any).lastAutoTable.finalY + 8;
 
-    return new Blob([new TextEncoder().encode(pdfStr)], { type: "application/pdf" });
-  };
-
-  const handleDownloadPdf = async () => {
-    try {
-      const res = await fetch(`${API_BASE}/api/reports/certin/${selectedIncId}/pdf`);
-      if (res.ok) {
-        const blob = await res.blob();
-        if (blob.size > 500) {
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = `CERT_IN_REPORT_${selectedIncId}.pdf`;
-          document.body.appendChild(a);
-          a.click();
-          window.URL.revokeObjectURL(url);
-          document.body.removeChild(a);
-          return;
+    // SECTION 2.0 TABLE
+    autoTable(doc, {
+      startY: startY,
+      margin: { left: marginX, right: marginX },
+      head: [
+        [
+          {
+            content: "2.0  INCIDENT IDENTIFICATION & REGULATORY CLASSIFICATION",
+            colSpan: 2,
+            styles: { fillColor: [30, 58, 102], textColor: [255, 255, 255], fontStyle: "bold", fontSize: 8.5 }
+          }
+        ]
+      ],
+      body: [
+        ["2.1 Incident Reference ID", incId],
+        ["2.2 Detection Timestamp (UTC / IST)", `${nowStr}  /  ${nowIst}`],
+        ["2.3 Mandatory CERT-In Category", category],
+        ["2.4 Severity & Escalation Level", `${sc.severity} (Immediate Escalation to Board Risk Committee)`],
+        ["2.5 MITRE ATT&CK Classification", `${sc.threat_tactic} (${sc.mitre_id})`],
+        ["2.6 Impacted Banking Infrastructure", paymentChannel]
+      ],
+      theme: "grid",
+      styles: { fontSize: 7.2, cellPadding: 3.5, textColor: [30, 41, 59], lineColor: [226, 232, 240], lineWidth: 0.5 },
+      columnStyles: {
+        0: { cellWidth: 155, fontStyle: "bold", textColor: [71, 85, 105], fillColor: [248, 250, 252] },
+        1: { cellWidth: "auto" }
+      },
+      didParseCell: (data) => {
+        if (data.section === "body" && data.column.index === 1) {
+          if (data.row.index === 0 || data.row.index === 2) {
+            data.cell.styles.textColor = [220, 38, 38];
+            data.cell.styles.fontStyle = "bold";
+          }
         }
       }
-    } catch (e) {
-      console.warn("API PDF download fallback triggered:", e);
+    });
+
+    startY = (doc as any).lastAutoTable.finalY + 8;
+
+    // SECTION 3.0 TABLE (MULTI-IP IoCs)
+    autoTable(doc, {
+      startY: startY,
+      margin: { left: marginX, right: marginX },
+      head: [
+        [
+          {
+            content: "3.0  TECHNICAL FORENSICS & MULTI-IP INDICATORS OF COMPROMISE (IoCs)",
+            colSpan: 2,
+            styles: { fillColor: [30, 58, 102], textColor: [255, 255, 255], fontStyle: "bold", fontSize: 8.5 }
+          }
+        ]
+      ],
+      body: [
+        ["3.1 Primary Attacker / C2 IP", attackerIps[0] || sc.attacker_ip],
+        ["3.2 Botnet / Tor / Proxy Nodes", attackerIps.length > 1 ? attackerIps.slice(1).join("\n") : "None detected"],
+        ["3.3 Affected Target Endpoints", targetAssets.join("\n")],
+        ["3.4 Compromised Credential / Role", compCreds],
+        ["3.5 Malicious Hash / Signature", payloadHash],
+        ["3.6 Autonomous Detection Engine", "VIGIL ES|QL Forensic Correlator (14.2ms Execution Latency)"]
+      ],
+      theme: "grid",
+      styles: { fontSize: 7.2, cellPadding: 3.5, textColor: [30, 41, 59], lineColor: [226, 232, 240], lineWidth: 0.5 },
+      columnStyles: {
+        0: { cellWidth: 155, fontStyle: "bold", textColor: [71, 85, 105], fillColor: [248, 250, 252] },
+        1: { cellWidth: "auto" }
+      },
+      didParseCell: (data) => {
+        if (data.section === "body" && data.column.index === 1) {
+          if (data.row.index === 0 || data.row.index === 1) {
+            data.cell.styles.textColor = [220, 38, 38];
+            data.cell.styles.fontStyle = "bold";
+          }
+        }
+      }
+    });
+
+    // =========================================================================
+    // PAGE 2 (EXPOSURE, REMEDIAL ACTIONS & STATUTORY SEAL)
+    // =========================================================================
+    doc.addPage();
+
+    // Page 2 Sub-Header
+    doc.setFillColor(15, 30, 56);
+    doc.roundedRect(marginX, 32, contentWidth, 38, 4, 4, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(255, 255, 255);
+    doc.text("INDIAN COMPUTER EMERGENCY RESPONSE TEAM (CERT-In) — ANNEXURE 1 CONTINUED", marginX + 14, 48);
+    doc.setFontSize(7.5);
+    doc.setTextColor(56, 189, 248);
+    doc.text(`INCIDENT REFERENCE ID: ${incId}  |  SECTOR: BANKING & FINANCIAL SERVICES (BFSI)`, marginX + 14, 60);
+
+    startY = 80;
+
+    // SECTION 4.0 TABLE
+    autoTable(doc, {
+      startY: startY,
+      margin: { left: marginX, right: marginX },
+      head: [
+        [
+          {
+            content: "4.0  RUPEE FINANCIAL EXPOSURE & IMPACT ASSESSMENT",
+            colSpan: 2,
+            styles: { fillColor: [30, 58, 102], textColor: [255, 255, 255], fontStyle: "bold", fontSize: 8.5 }
+          }
+        ]
+      ],
+      body: [
+        ["4.1 Direct Rupee Funds at Risk", `Rs. ${directINR.toLocaleString("en-IN")}.00 (${(directINR / 10000000).toFixed(2)} Crore INR)`],
+        ["4.2 Customer Blast Radius", `${affectedAccounts} Total Accounts (${corpAccounts} Corporate Treasury, ${hniAccounts} HNI / Private Wealth)`],
+        ["4.3 Customer PII / Statement Leak", directINR > 0 ? "NO PII EXFILTRATED (Intercepted before clearance batch)" : "Zero Customer PII Impact"],
+        ["4.4 Payment Switch & Core Ledger Status", "OPERATIONAL (Unauthorized activity quarantined in flight)"],
+        ["4.5 Business Continuity Status", "Green / Normal (Zero disruption to retail banking customers)"]
+      ],
+      theme: "grid",
+      styles: { fontSize: 7.2, cellPadding: 3.5, textColor: [30, 41, 59], lineColor: [226, 232, 240], lineWidth: 0.5 },
+      columnStyles: {
+        0: { cellWidth: 155, fontStyle: "bold", textColor: [71, 85, 105], fillColor: [248, 250, 252] },
+        1: { cellWidth: "auto" }
+      },
+      didParseCell: (data) => {
+        if (data.section === "body" && data.column.index === 1 && data.row.index === 0) {
+          data.cell.styles.textColor = [16, 185, 129];
+          data.cell.styles.fontStyle = "bold";
+        }
+      }
+    });
+
+    startY = (doc as any).lastAutoTable.finalY + 8;
+
+    // SECTION 5.0 TABLE
+    const actionRows = actions.slice(0, 4).map((act, idx) => [
+      `5.${idx + 1} ${act.title}`,
+      `${act.description} [EXECUTED / SEALED]`
+    ]);
+    actionRows.push(["5.5 Digital Evidence Locker", "SEALED in SHA-256 Immutable Audit Ledger & AWS S3 WORM Storage"]);
+    actionRows.push(["5.6 Real-Time Telemetry Stream", "Elastic Cloud live agent monitoring active (1-minute heartbeat)"]);
+
+    autoTable(doc, {
+      startY: startY,
+      margin: { left: marginX, right: marginX },
+      head: [
+        [
+          {
+            content: "5.0  REMEDIAL, MITIGATION & CONTAINMENT ACTIONS EXECUTED",
+            colSpan: 2,
+            styles: { fillColor: [30, 58, 102], textColor: [255, 255, 255], fontStyle: "bold", fontSize: 8.5 }
+          }
+        ]
+      ],
+      body: actionRows,
+      theme: "grid",
+      styles: { fontSize: 7.2, cellPadding: 3.5, textColor: [30, 41, 59], lineColor: [226, 232, 240], lineWidth: 0.5 },
+      columnStyles: {
+        0: { cellWidth: 155, fontStyle: "bold", textColor: [71, 85, 105], fillColor: [248, 250, 252] },
+        1: { cellWidth: "auto" }
+      }
+    });
+
+    startY = (doc as any).lastAutoTable.finalY + 12;
+
+    // SECTION 6.0: OFFICIAL CERTIFICATE SEAL BOX
+    doc.setFillColor(248, 250, 252);
+    doc.setDrawColor(203, 213, 225);
+    doc.setLineWidth(0.8);
+    doc.roundedRect(marginX, startY, contentWidth, 90, 4, 4, "FD");
+
+    // Navy Accent Strip on Left
+    doc.setFillColor(30, 58, 102);
+    doc.roundedRect(marginX, startY, 4, 90, 2, 2, "F");
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7.5);
+    doc.setTextColor(30, 58, 102);
+    doc.text("6.0  STATUTORY DECLARATION & FORMAL NODAL SIGN-OFF", marginX + 12, startY + 14);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6.5);
+    doc.setTextColor(71, 85, 105);
+    doc.text(
+      "I hereby confirm that this cyber security incident notification has been generated and validated by the VIGIL\nAutonomous Incident Response Engine in coordination with the CISO Nodal Office. All indicators of compromise,\naffected asset vectors, rupee exposure figures, and containment actions are authentic and cryptographically sealed.",
+      marginX + 12,
+      startY + 26
+    );
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    doc.setTextColor(15, 23, 42);
+    doc.text("Digitally Authorized by: Rajeshwar Varma  |  Chief Information Security Officer", marginX + 12, startY + 68);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6.5);
+    doc.setTextColor(100, 116, 139);
+    doc.text("Apex Commercial Bank of India Ltd  |  Certified Public Key: 0x8F92..BC10  |  Mumbai HQ", marginX + 12, startY + 80);
+
+    // Official Seal Badge
+    doc.setFillColor(220, 38, 38);
+    doc.roundedRect(pageWidth - marginX - 120, startY + 45, 108, 34, 3, 3, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    doc.setTextColor(255, 255, 255);
+    doc.text("OFFICIALLY SEALED", pageWidth - marginX - 112, startY + 58);
+    doc.setFontSize(6);
+    doc.text("SHA-256 HASH VERIFIED", pageWidth - marginX - 112, startY + 68);
+    doc.text("S3 WORM OBJECT LOCK", pageWidth - marginX - 112, startY + 75);
+
+    // Add Footers & Page Numbers to All Pages
+    const totalPages = (doc.internal as any).getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+      doc.setDrawColor(226, 232, 240);
+      doc.setLineWidth(0.5);
+      doc.line(marginX, pageHeight - 28, pageWidth - marginX, pageHeight - 28);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(6.5);
+      doc.setTextColor(148, 163, 184);
+      doc.text("VIGIL Autonomous AI SOC Analyst  |  Statutory Filing under Section 70B IT Act 2000  |  Strictly Confidential", marginX, pageHeight - 18);
+      doc.text(`Page ${i} of ${totalPages}`, pageWidth - marginX - 45, pageHeight - 18);
     }
 
-    const pdfBlob = generateClientCertInPdf(currentScenario);
-    const url = window.URL.createObjectURL(pdfBlob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `CERT_IN_REPORT_${selectedIncId}.pdf`;
-    document.body.appendChild(a);
-    a.click();
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
+    return doc.output("blob");
+  };
+
+  const handleDownloadPdf = () => {
+    try {
+      const pdfBlob = generateClientCertInPdf(currentScenario);
+      const url = window.URL.createObjectURL(pdfBlob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `CERT_IN_REPORT_${selectedIncId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (e) {
+      console.error("PDF generation failed:", e);
+    }
   };
 
   const handleTranslate = async (lang: string) => {
