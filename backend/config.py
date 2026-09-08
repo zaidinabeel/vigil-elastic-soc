@@ -49,5 +49,5 @@ USE_LIVE_SARVAM = os.getenv("USE_LIVE_SARVAM", "false").lower() in ("true", "1",
 
 # Server & KMS Settings
 SERVER_HOST = os.getenv("SERVER_HOST", "0.0.0.0")
-SERVER_PORT = int(os.getenv("SERVER_PORT", "8000"))
+SERVER_PORT = int(os.getenv("PORT", os.getenv("SERVER_PORT", "8000")))
 KMS_KEY_ARN = os.getenv("KMS_KEY_ARN", "arn:aws:kms:ap-south-1:123456789012:key/vigil-ledger-sign-key")

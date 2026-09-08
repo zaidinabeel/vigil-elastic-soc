@@ -961,10 +961,12 @@ export default function App() {
     setContainmentApproved(true);
   };
 
+  const API_BASE = ((import.meta as any).env?.VITE_API_URL as string) || "";
+
   const handleRunEsql = async () => {
     setIsQuerying(true);
     try {
-      const res = await fetch("/api/esql/execute", {
+      const res = await fetch(`${API_BASE}/api/esql/execute`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query: esqlQuery })
@@ -989,7 +991,7 @@ export default function App() {
 
   const handleDownloadPdf = async () => {
     try {
-      const res = await fetch(`/api/reports/certin/${selectedIncId}/pdf`);
+      const res = await fetch(`${API_BASE}/api/reports/certin/${selectedIncId}/pdf`);
       if (res.ok) {
         const blob = await res.blob();
         const url = window.URL.createObjectURL(blob);
@@ -1047,7 +1049,7 @@ Generated automatically by VIGIL AI Tier-1 SOC Analyst`;
     setSelectedLang(lang);
     setIsTranslating(true);
     try {
-      const res = await fetch("/api/translate/indic", {
+      const res = await fetch(`${API_BASE}/api/translate/indic`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: currentScenario.title, target_lang: lang })
