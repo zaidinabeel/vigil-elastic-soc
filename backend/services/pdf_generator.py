@@ -113,10 +113,10 @@ Q
     def build_pdf(self) -> bytes:
         self.draw_header()
         
-        sc = self.data.get("scenario", {})
-        mat = self.data.get("step1_materiality", {})
-        exp = self.data.get("step3_exposure", {})
-        inc_id = sc.get("incident_id", "INC-2026-0902-01")
+        sc = self.data.get("scenario") or self.data or {}
+        mat = self.data.get("step1_materiality") or {}
+        exp = self.data.get("step3_exposure") or {}
+        inc_id = sc.get("incident_id") or self.data.get("incident_id", "INC-2026-0902-01")
         now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
 
         # Section 1: Organisation
@@ -130,15 +130,18 @@ Q
         # Section 2: Incident Details
         self.draw_section_title("2. INCIDENT DETECTION & REGULATORY CLASSIFICATION")
         self.draw_field_row("Date & Time of Incident Detection", now_str)
-        self.draw_field_row("CERT-In Incident Category", mat.get("certin_category", "CIAD-2022-04 Unauthorized Access"))
+        certin_cat = mat.get("certin_category") or "CIAD-2022-04 Unauthorized Access & Fraud"
+        self.draw_field_row("CERT-In Incident Category", certin_cat)
         self.draw_field_row("Regulatory Reporting Window", "Mandatory 6 Hours (CERT-In / RBI Directions)")
-        self.draw_field_row("MITRE ATT&CK Classification", f"{sc.get('threat_tactic')} ({sc.get('mitre_id')})")
+        threat_tactic = sc.get("threat_tactic", "T1078 Valid Accounts")
+        mitre_id = sc.get("mitre_id", "T1078")
+        self.draw_field_row("MITRE ATT&CK Classification", f"{threat_tactic} ({mitre_id})")
         self.draw_field_row("Attacker Source IP(s)", sc.get("attacker_ip", "198.51.100.44"), is_highlight=True)
         self.y -= 6
 
         # Section 3: Financial & Impact Assessment
         self.draw_section_title("3. RUPEE FINANCIAL EXPOSURE & IMPACT ASSESSMENT")
-        direct_inr = exp.get("direct_exposure_inr", sc.get("direct_exposure_inr", 0.0))
+        direct_inr = exp.get("direct_exposure_inr") or sc.get("direct_exposure_inr") or 0.0
         channel_name = (
             "UPI Bulk Gateway / NPCI Inter-Bank Switch" if inc_id == "INC-2026-0902-01" else
             "NetBanking Web Portal & High-Velocity IMPS" if inc_id == "INC-2026-0902-02" else
@@ -147,28 +150,33 @@ Q
             "Internal Core Batch Scheduler (Routine Maintenance)"
         )
         self.draw_field_row("Direct Financial Risk (INR)", f"Rs. {direct_inr:,.2f}", is_highlight=(direct_inr > 0))
-        self.draw_field_row("Customer Accounts Affected", f"{exp.get('affected_accounts_count', sc.get('affected_accounts_count', 18))} Accounts")
+        aff_count = exp.get("affected_accounts_count") or sc.get("affected_accounts_count") or 18
+        self.draw_field_row("Customer Accounts Affected", f"{aff_count} Accounts")
         self.draw_field_row("Payment Channels Impacted", channel_name)
         self.draw_field_row("Core Banking Operational Status", "NORMAL (Unauthorized activity intercepted / neutralized)")
         self.y -= 6
 
         # Section 4: Containment & Remediation
         self.draw_section_title("4. REMEDIAL & CONTAINMENT ACTIONS TAKEN")
+        comp_user = sc.get("compromised_user", "svc_payment_gw")
+        att_ip = sc.get("attacker_ip", "198.51.100.44")
+        batch_id = sc.get("batch_id", "UPI-BATCH-9921")
+
         if inc_id == "INC-2026-0902-01":
-            self.draw_field_row("Credential Invalidation", f"OAuth2 Bearer Token for '{sc.get('compromised_user')}' revoked")
-            self.draw_field_row("Perimeter Security Action", f"Null-routed IP '{sc.get('attacker_ip')}' on edge firewall")
-            self.draw_field_row("Payment Settlement Action", f"Batch '{sc.get('batch_id')}' placed on hold in NPCI switch")
+            self.draw_field_row("Credential Invalidation", f"OAuth2 Bearer Token for '{comp_user}' revoked")
+            self.draw_field_row("Perimeter Security Action", f"Null-routed IP '{att_ip}' on edge firewall")
+            self.draw_field_row("Payment Settlement Action", f"Batch '{batch_id}' placed on hold in NPCI switch")
         elif inc_id == "INC-2026-0902-02":
-            self.draw_field_row("WAF Ingress Defense", f"Geo-IP reputation block enforced for '{sc.get('attacker_ip')}'")
+            self.draw_field_row("WAF Ingress Defense", f"Geo-IP reputation block enforced for '{att_ip}'")
             self.draw_field_row("IAM Session Termination", "Force password reset on 28 corporate accounts")
-            self.draw_field_row("Payment Velocity Action", f"Outbound IMPS queue '{sc.get('batch_id')}' frozen")
+            self.draw_field_row("Payment Velocity Action", f"Outbound IMPS queue '{batch_id}' frozen")
         elif inc_id == "INC-2026-0902-03":
-            self.draw_field_row("Network Access Control", f"Quarantined switch tap '{sc.get('attacker_ip')}' to sinkhole VLAN")
-            self.draw_field_row("Cryptographic HSM Action", f"Rotated MAC encryption keys for '{sc.get('batch_id')}'")
+            self.draw_field_row("Network Access Control", f"Quarantined switch tap '{att_ip}' to sinkhole VLAN")
+            self.draw_field_row("Cryptographic HSM Action", f"Rotated MAC encryption keys for '{batch_id}'")
             self.draw_field_row("ATM Authorization Mode", "Forced 100% synchronous core ledger validation")
         elif inc_id == "INC-2026-0902-04":
-            self.draw_field_row("Insider Access Revocation", f"Active Directory & CBS rights revoked for '{sc.get('compromised_user')}'")
-            self.draw_field_row("Treasury Queue Action", f"Disbursal batch '{sc.get('batch_id')}' suspended")
+            self.draw_field_row("Insider Access Revocation", f"Active Directory & CBS rights revoked for '{comp_user}'")
+            self.draw_field_row("Treasury Queue Action", f"Disbursal batch '{batch_id}' suspended")
             self.draw_field_row("AML Beneficiary Lien", "Placed debit freeze on 12 recipient mule accounts")
         else:
             self.draw_field_row("Schedule Correlation", "Validated against CBS monthly maintenance calendar")

@@ -1005,49 +1005,203 @@ export default function App() {
     }
   };
 
+  // Client-Side PDF Binary Generator
+  const generateClientCertInPdf = (sc: any): Blob => {
+    const w = 595.28;
+    const h = 841.89;
+    const margin_x = 40.0;
+    const content_w = w - 2 * margin_x;
+    let y = h - 40.0;
+    const stream: string[] = [];
+
+    const escape = (text: any) =>
+      String(text || "")
+        .replace(/\\/g, "\\\\")
+        .replace(/\(/g, "\\(")
+        .replace(/\)/g, "\\)")
+        .replace(/\r/g, "");
+
+    // Header Box
+    const h_box = 65.0;
+    stream.push(`q
+0.06 0.09 0.16 rg
+${margin_x} ${y - h_box} ${content_w} ${h_box} re f
+0.01 0.52 0.78 RG 1.5 w
+${margin_x} ${y - h_box} ${content_w} ${h_box} re S
+1 1 1 rg
+BT
+/F2 13 Tf
+${margin_x + 12} ${y - 24} Td
+(INDIAN COMPUTER EMERGENCY RESPONSE TEAM (CERT-In)) Tj
+ET
+0.22 0.74 0.97 rg
+BT
+/F2 9.5 Tf
+${margin_x + 12} ${y - 40} Td
+(CYBER SECURITY INCIDENT REPORTING FORM - ANNEXURE 1) Tj
+ET
+0.58 0.64 0.72 rg
+BT
+/F1 7 Tf
+${margin_x + 12} ${y - 54} Td
+(Mandatory statutory reporting under Section 70B of IT Act 2000 & CERT-In Directions 2022) Tj
+ET
+Q
+`);
+    y -= (h_box + 14);
+
+    const drawSection = (title: string) => {
+      stream.push(`q
+0.01 0.52 0.78 rg
+${margin_x} ${y - 12} 3 12 re f
+0.06 0.09 0.16 rg
+BT
+/F2 9.5 Tf
+${margin_x + 8} ${y - 10.5} Td
+(${escape(title)}) Tj
+ET
+Q
+`);
+      y -= 18;
+    };
+
+    const drawField = (label: string, value: any, isHighlight = false) => {
+      stream.push(`q
+0.96 0.97 0.99 rg
+${margin_x} ${y - 15} ${content_w} 15 re f
+0.88 0.91 0.94 RG 0.5 w
+${margin_x} ${y - 15} ${content_w} 15 re S
+0.3 0.35 0.42 rg
+BT
+/F2 7.5 Tf
+${margin_x + 6} ${y - 11} Td
+(${escape(label)}:) Tj
+ET
+${isHighlight ? "0.8 0.1 0.1 rg" : "0.06 0.09 0.16 rg"}
+BT
+/${isHighlight ? "F2" : "F1"} 7.5 Tf
+${margin_x + 180} ${y - 11} Td
+(${escape(String(value).slice(0, 70))}) Tj
+ET
+Q
+`);
+      y -= 17;
+    };
+
+    const nowStr = new Date().toISOString().replace("T", " ").slice(0, 19) + " UTC";
+
+    // 1. Organisation
+    drawSection("1. ORGANISATION PARTICULARS & NODAL CONTACT");
+    drawField("Name of Organisation", "Apex Commercial Bank of India Ltd");
+    drawField("Sector / Regulatory Body", "Banking & Financial Services (RBI Supervised)");
+    drawField("CISO Nodal Officer Contact", "ciso-office@apexbank.in | +91-22-6889-0100");
+    drawField("Reporting Reference ID", sc.incident_id || "INC-2026-0902-01");
+    y -= 6;
+
+    // 2. Incident Details
+    drawSection("2. INCIDENT DETECTION & REGULATORY CLASSIFICATION");
+    drawField("Date & Time of Incident Detection", nowStr);
+    drawField("CERT-In Incident Category", sc.step1?.certin_category || "CIAD-2022-04 Unauthorized Access & Fraud");
+    drawField("Regulatory Reporting Window", "Mandatory 6 Hours (CERT-In / RBI Directions)");
+    drawField("MITRE ATT&CK Classification", `${sc.threat_tactic || "T1078"} (${sc.mitre_id || "T1078"})`);
+    drawField("Attacker Source Entity / IP", sc.step2?.discovered_entity || "198.51.100.44", true);
+    y -= 6;
+
+    // 3. Financial Exposure
+    drawSection("3. RUPEE FINANCIAL EXPOSURE & IMPACT ASSESSMENT");
+    const directRisk = Number(sc.direct_exposure_inr || 0);
+    drawField("Direct Financial Risk (INR)", `Rs. ${directRisk.toLocaleString("en-IN")}.00`, directRisk > 0);
+    drawField("Customer Accounts Affected", `${sc.step3?.affected_accounts_total || 18} Accounts (${sc.step3?.corporate_count || 3} Corporate, ${sc.step3?.hni_count || 15} HNI)`);
+    drawField("Payment Channels Impacted", sc.step3?.account_examples || "Core Banking & Inter-Bank Switch");
+    drawField("Core Banking Operational Status", "NORMAL (Unauthorized activity intercepted & neutralized)");
+    y -= 6;
+
+    // 4. Containment & Remediation
+    drawSection("4. REMEDIAL & CONTAINMENT ACTIONS TAKEN");
+    const acts = sc.step4?.actions || [];
+    drawField("Perimeter Firewall Action", acts[0]?.title || "Null-routed malicious ingress IP on edge firewall");
+    drawField("IAM Session Invalidation", acts[1]?.title || "OAuth2 Bearer token revoked & forced password rotation");
+    drawField("Payment Velocity Gate", acts[2]?.title || "Placed debit freeze & suspended anomalous outbound batches");
+    drawField("Cryptographic Evidence Status", "SEALED in SHA-256 Hash Chain Ledger (S3 Object Lock)");
+
+    // Footer
+    stream.push(`q
+0.88 0.91 0.94 RG 0.5 w
+${margin_x} 30 m ${w - margin_x} 30 l S
+0.5 0.55 0.65 rg
+BT
+/F1 6.5 Tf
+${margin_x} 20 Td
+(Generated automatically by VIGIL AI Tier-1 SOC Analyst | Sealed under SHA-256 Hash Chain) Tj
+${w - margin_x - 70} 20 Td
+(CERT-In 6-Hour Filing) Tj
+ET
+Q
+`);
+
+    const pageStream = stream.join("\n");
+    const streamLen = new TextEncoder().encode(pageStream).length;
+
+    const objs = [
+      `<< /Type /Catalog /Pages 2 0 R >>`,
+      `<< /Type /Pages /Kids [3 0 R] /Count 1 >>`,
+      `<< /Type /Page /Parent 2 0 R
+/MediaBox [0 0 ${w} ${h}]
+/Resources <<
+  /Font <<
+    /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+    /F2 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+  >>
+>>
+/Contents 4 0 R >>`,
+      `<< /Length ${streamLen} >>\nstream\n${pageStream}\nendstream`
+    ];
+
+    let pdfStr = "%PDF-1.4\n%\xE2\xE3\xCF\xD3\n";
+    const offsets: number[] = [];
+
+    objs.forEach((obj, idx) => {
+      offsets.push(new TextEncoder().encode(pdfStr).length);
+      pdfStr += `${idx + 1} 0 obj\n${obj}\nendobj\n`;
+    });
+
+    const xrefPos = new TextEncoder().encode(pdfStr).length;
+    pdfStr += `xref\n0 ${objs.length + 1}\n0000000000 65535 f \n`;
+    offsets.forEach(off => {
+      pdfStr += `${String(off).padStart(10, "0")} 00000 n \n`;
+    });
+    pdfStr += `trailer\n<< /Size ${objs.length + 1}\n   /Root 1 0 R\n>>\nstartxref\n${xrefPos}\n%%EOF\n`;
+
+    return new Blob([new TextEncoder().encode(pdfStr)], { type: "application/pdf" });
+  };
+
   const handleDownloadPdf = async () => {
     try {
       const res = await fetch(`${API_BASE}/api/reports/certin/${selectedIncId}/pdf`);
       if (res.ok) {
         const blob = await res.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `CERT_IN_REPORT_${selectedIncId}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-        return;
+        if (blob.size > 500) {
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `CERT_IN_REPORT_${selectedIncId}.pdf`;
+          document.body.appendChild(a);
+          a.click();
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(a);
+          return;
+        }
       }
     } catch (e) {
       console.warn("API PDF download fallback triggered:", e);
     }
 
-    // Direct Client-Side Form Download fallback
-    const reportText = `INDIAN COMPUTER EMERGENCY RESPONSE TEAM (CERT-In)
-INCIDENT REPORTING FORM - ANNEXURE 1
-================================================================================
-1. Name of Organisation: Apex Commercial Bank of India Ltd (BFSI)
-2. Reporting Date & Time: ${new Date().toUTCString()} (Within 6-Hour Window)
-3. CERT-In Incident Ref: ${selectedIncId}
-4. Nature of Incident: ${currentScenario.threat_tactic} (${currentScenario.title})
-5. Primary Source IP / Segment: ${currentScenario.step2.discovered_entity}
-6. Direct Financial Risk: Rs. ${currentScenario.direct_exposure_inr.toLocaleString("en-IN")}.00
-7. Customer Accounts Affected: ${currentScenario.step3.affected_accounts_total} Accounts (${currentScenario.step3.corporate_count} Corporate, ${currentScenario.step3.hni_count} HNI)
-8. Remedial & Containment Actions Taken:
-   - ${currentScenario.step4.actions[0]?.title || "Contained"}
-   - ${currentScenario.step4.actions[1]?.title || "Secured"}
-   - ${currentScenario.step4.actions[2]?.title || "Sealed"}
-9. Evidence Ledger: Sealed under SHA-256 Hash Chain (AWS S3 WORM Object Lock)
-================================================================================
-Generated automatically by VIGIL AI Tier-1 SOC Analyst`;
-
-    const blob = new Blob([reportText], { type: "text/plain" });
-    const url = window.URL.createObjectURL(blob);
+    // Direct High-Fidelity Client-Side PDF Generation
+    const pdfBlob = generateClientCertInPdf(currentScenario);
+    const url = window.URL.createObjectURL(pdfBlob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `CERT_IN_REPORT_${selectedIncId}.txt`;
+    a.download = `CERT_IN_REPORT_${selectedIncId}.pdf`;
     document.body.appendChild(a);
     a.click();
     window.URL.revokeObjectURL(url);
