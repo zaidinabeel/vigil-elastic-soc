@@ -143,6 +143,59 @@ if HAS_FASTAPI:
     def check_ledger():
         return verify_ledger_integrity()
 
+    @app.post("/api/telemetry/inject-pulse")
+    def inject_pulse_now():
+        from backend.data.live_stream_daemon import generate_attack_pulse
+        attack_docs, attack_name = generate_attack_pulse()
+        lines = []
+        for d in attack_docs:
+            idx = d.pop("_index", "logs-banking-default")
+            lines.append(json.dumps({"index": {"_index": idx}}))
+            lines.append(json.dumps(d))
+        ndjson_body = "\n".join(lines) + "\n"
+        res = elastic_client.bulk_index(ndjson_body)
+        return {
+            "status": "ATTACK_PULSE_INJECTED",
+            "campaign": attack_name,
+            "events_count": len(attack_docs),
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+
+    # Background Live Telemetry Streamer on Render
+    import threading
+    import time
+    from datetime import datetime
+
+    def _background_telemetry_loop():
+        time.sleep(5) # Allow server to bind port first
+        while True:
+            try:
+                from backend.data.live_stream_daemon import generate_noise_batch, generate_attack_pulse
+                import random
+                
+                batch = generate_noise_batch(batch_size=random.randint(8, 16))
+                
+                # 20% probability of periodic attack pulse
+                if random.random() < 0.20:
+                    attack_docs, _ = generate_attack_pulse()
+                    batch.extend(attack_docs)
+                    
+                lines = []
+                for d in batch:
+                    idx = d.pop("_index", "logs-banking-default")
+                    lines.append(json.dumps({"index": {"_index": idx}}))
+                    lines.append(json.dumps(d))
+                ndjson_body = "\n".join(lines) + "\n"
+                elastic_client.bulk_index(ndjson_body)
+            except Exception:
+                pass
+            time.sleep(6)
+
+    @app.on_event("startup")
+    def on_startup():
+        worker = threading.Thread(target=_background_telemetry_loop, daemon=True)
+        worker.start()
+
 else:
     # Minimal HTTP Server fallback using standard library
     import http.server
