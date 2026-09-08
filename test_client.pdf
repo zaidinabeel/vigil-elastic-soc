@@ -1,0 +1,62 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R
+/MediaBox [0 0 595.28 841.89]
+/Resources <<
+  /Font <<
+    /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+    /F2 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+  >>
+>>
+/Contents 4 0 R >>
+endobj
+4 0 obj
+<< /Length 421 >>
+stream
+q
+0.06 0.09 0.16 rg
+40.0 736.89 515.28 65.0 re f
+0.01 0.52 0.78 RG 1.5 w
+40.0 736.89 515.28 65.0 re S
+1 1 1 rg
+BT
+/F2 13 Tf
+52.0 777.89 Td
+(INDIAN COMPUTER EMERGENCY RESPONSE TEAM (CERT-In)) Tj
+ET
+0.22 0.74 0.97 rg
+BT
+/F2 9.5 Tf
+52.0 761.89 Td
+(CYBER SECURITY INCIDENT REPORTING FORM - ANNEXURE 1) Tj
+ET
+0.58 0.64 0.72 rg
+BT
+/F1 7 Tf
+52.0 747.89 Td
+(Mandatory statutory reporting under Section 70B of IT Act 2000) Tj
+ET
+Q
+endstream
+endobj
+xref
+0 5
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000121 00000 n 
+0000000378 00000 n 
+trailer
+<< /Size 5
+   /Root 1 0 R
+>>
+startxref
+850
+%%EOF

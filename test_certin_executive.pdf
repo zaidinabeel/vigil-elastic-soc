@@ -1,0 +1,1015 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R
+/MediaBox [0 0 595.28 841.89]
+/Resources <<
+  /Font <<
+    /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+    /F2 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+  >>
+>>
+/Contents 5 0 R >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R
+/MediaBox [0 0 595.28 841.89]
+/Resources <<
+  /Font <<
+    /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+    /F2 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+  >>
+>>
+/Contents 6 0 R >>
+endobj
+5 0 obj
+<< /Length 8478 >>
+stream
+
+q
+% Top Decorative Header Band
+0.08 0.16 0.28 rg
+40.0 743.89 515.28 62 re f
+
+1 1 1 rg
+BT
+/F2 11 Tf
+56.0 787.89 Td
+(GOVERNMENT OF INDIA | MINISTRY OF ELECTRONICS & INFORMATION TECHNOLOGY) Tj
+ET
+
+0.35 0.75 1 rg
+BT
+/F2 13.5 Tf
+56.0 770.89 Td
+(INDIAN COMPUTER EMERGENCY RESPONSE TEAM (CERT-In)) Tj
+ET
+
+0.85 0.9 0.98 rg
+BT
+/F2 8.5 Tf
+56.0 757.89 Td
+(CYBER SECURITY INCIDENT REPORTING FORM - ANNEXURE 1) Tj
+/F1 6.5 Tf
+56.0 748.89 Td
+(Under Section 70B of Information Technology Act, 2000 & CERT-In Directions 2022) Tj
+ET
+
+% 6-Hour SLA Badge
+0.8 0.12 0.12 rg
+435.28 753.89 104 38 re f
+1 1 1 rg
+BT
+/F2 7.5 Tf
+441.28 780.89 Td
+(6-HOUR STATUTORY SLA) Tj
+/F1 6.5 Tf
+441.28 769.89 Td
+(Status: FILED IN TIME) Tj
+/F2 6.5 Tf
+441.28 759.89 Td
+(Elapsed: 4.2 Minutes) Tj
+ET
+Q
+
+q
+% Section Header Bar
+0.92 0.94 0.97 rg
+40.0 714.89 515.28 15 re f
+0.08 0.16 0.28 rg
+40.0 714.89 3.5 15 re f
+0.08 0.16 0.28 rg
+BT
+/F2 8.5 Tf
+48.0 718.89 Td
+(1.0 ORGANISATION PARTICULARS & CISO NODAL CONTACT) Tj
+ET
+Q
+
+q
+% Row Background
+1 1 1 rg
+40.0 696.89 515.28 13 re f
+% Bottom subtle divider line
+0.88 0.91 0.94 RG 0.4 w
+40.0 696.89 m 555.28 696.89 l S
+
+% Label Column
+0.25 0.32 0.4 rg
+BT
+/F2 7.2 Tf
+46.0 700.39 Td
+(1.1 Name of Organisation) Tj
+ET
+
+% Value Column
+0.08 0.12 0.18 rg
+BT
+/F1 7.2 Tf
+200.0 700.39 Td
+(Apex Commercial Bank of India Ltd) Tj
+ET
+Q
+
+q
+% Row Background
+0.97 0.98 0.99 rg
+40.0 683.39 515.28 13 re f
+% Bottom subtle divider line
+0.88 0.91 0.94 RG 0.4 w
+40.0 683.39 m 555.28 683.39 l S
+
+% Label Column
+0.25 0.32 0.4 rg
+BT
+/F2 7.2 Tf
+46.0 686.89 Td
+(1.2 Regulatory Category) Tj
+ET
+
+% Value Column
+0.08 0.12 0.18 rg
+BT
+/F1 7.2 Tf
+200.0 686.89 Td
+(Banking & Financial Services \(Scheduled Commercial Bank - RBI Supervised\)) Tj
+ET
+Q
+
+q
+% Row Background
+1 1 1 rg
+40.0 669.89 515.28 13 re f
+% Bottom subtle divider line
+0.88 0.91 0.94 RG 0.4 w
+40.0 669.89 m 555.28 669.89 l S
+
+% Label Column
+0.25 0.32 0.4 rg
+BT
+/F2 7.2 Tf
+46.0 673.39 Td
+(1.3 CISO / Designated Nodal Officer) Tj
+ET
+
+% Value Column
+0.08 0.12 0.18 rg
+BT
+/F1 7.2 Tf
+200.0 673.39 Td
+(Rajeshwar Varma \(Chief Information Security Officer\)) Tj
+ET
+Q
+
+q
+% Row Background
+0.97 0.98 0.99 rg
+40.0 656.39 515.28 13 re f
+% Bottom subtle divider line
+0.88 0.91 0.94 RG 0.4 w
+40.0 656.39 m 555.28 656.39 l S
+
+% Label Column
+0.25 0.32 0.4 rg
+BT
+/F2 7.2 Tf
+46.0 659.89 Td
+(1.4 24x7 SOC Emergency Contact) Tj
+ET
+
+% Value Column
+0.08 0.12 0.18 rg
+BT
+/F1 7.2 Tf
+200.0 659.89 Td
+(ciso-office@apexbank.in | soc-hotline@apexbank.in | +91-22-6889-0100) Tj
+ET
+Q
+
+q
+% Row Background
+1 1 1 rg
+40.0 642.89 515.28 13 re f
+% Bottom subtle divider line
+0.88 0.91 0.94 RG 0.4 w
+40.0 642.89 m 555.28 642.89 l S
+
+% Label Column
+0.25 0.32 0.4 rg
+BT
+/F2 7.2 Tf
+46.0 646.39 Td
+(1.5 Primary Data Center Location) Tj
+ET
+
+% Value Column
+0.08 0.12 0.18 rg
+BT
+/F1 7.2 Tf
+200.0 646.39 Td
+(Primary DC: Navi Mumbai Tier-IV | DR: Hyderabad | Cloud: AWS ap-south-1) Tj
+ET
+Q
+
+q
+% Section Header Bar
+0.92 0.94 0.97 rg
+40.0 621.39 515.28 15 re f
+0.08 0.16 0.28 rg
+40.0 621.39 3.5 15 re f
+0.08 0.16 0.28 rg
+BT
+/F2 8.5 Tf
+48.0 625.39 Td
+(2.0 INCIDENT IDENTIFICATION & REGULATORY CLASSIFICATION) Tj
+ET
+Q
+
+q
+% Row Background
+1 1 1 rg
+40.0 603.39 515.28 13 re f
+% Bottom subtle divider line
+0.88 0.91 0.94 RG 0.4 w
+40.0 603.39 m 555.28 603.39 l S
+
+% Label Column
+0.25 0.32 0.4 rg
+BT
+/F2 7.2 Tf
+46.0 606.89 Td
+(2.1 Incident Reference ID) Tj
+ET
+
+% Value Column
+0.8 0.1 0.1 rg
+BT
+/F2 7.2 Tf
+200.0 606.89 Td
+(INC-2026-0902-01) Tj
+ET
+Q
+
+q
+% Row Background
+0.97 0.98 0.99 rg
+40.0 589.89 515.28 13 re f
+% Bottom subtle divider line
+0.88 0.91 0.94 RG 0.4 w
+40.0 589.89 m 555.28 589.89 l S
+
+% Label Column
+0.25 0.32 0.4 rg
+BT
+/F2 7.2 Tf
+46.0 593.39 Td
+(2.2 Detection Timestamp \(UTC / IST\)) Tj
+ET
+
+% Value Column
+0.08 0.12 0.18 rg
+BT
+/F1 7.2 Tf
+200.0 593.39 Td
+(2026-09-08 17:18:06 UTC  /  2026-09-08 17:18:06 IST) Tj
+ET
+Q
+
+q
+% Row Background
+1 1 1 rg
+40.0 576.39 515.28 13 re f
+% Bottom subtle divider line
+0.88 0.91 0.94 RG 0.4 w
+40.0 576.39 m 555.28 576.39 l S
+
+% Label Column
+0.25 0.32 0.4 rg
+BT
+/F2 7.2 Tf
+46.0 579.89 Td
+(2.3 Mandatory CERT-In Category) Tj
+ET
+
+% Value Column
+0.8 0.1 0.1 rg
+BT
+/F2 7.2 Tf
+200.0 579.89 Td
+(CIAD-2022-04 Unauthorized Access to Payment Gateway & Financial Fraud) Tj
+ET
+Q
+
+q
+% Row Background
+0.97 0.98 0.99 rg
+40.0 562.89 515.28 13 re f
+% Bottom subtle divider line
+0.88 0.91 0.94 RG 0.4 w
+40.0 562.89 m 555.28 562.89 l S
+
+% Label Column
+0.25 0.32 0.4 rg
+BT
+/F2 7.2 Tf
+46.0 566.39 Td
+(2.4 Severity & Escalation Level) Tj
+ET
+
+% Value Column
+0.08 0.12 0.18 rg
+BT
+/F1 7.2 Tf
+200.0 566.39 Td
+(CRITICAL \(Immediate Notification to Board Risk Committee\)) Tj
+ET
+Q
+
+q
+% Row Background
+1 1 1 rg
+40.0 549.39 515.28 13 re f
+% Bottom subtle divider line
+0.88 0.91 0.94 RG 0.4 w
+40.0 549.39 m 555.28 549.39 l S
+
+% Label Column
+0.25 0.32 0.4 rg
+BT
+/F2 7.2 Tf
+46.0 552.89 Td
+(2.5 MITRE ATT&CK Classification) Tj
+ET
+
+% Value Column
+0.08 0.12 0.18 rg
+BT
+/F1 7.2 Tf
+200.0 552.89 Td
+(Privilege Escalation / Financial Exfiltration \(T1078.004\)) Tj
+ET
+Q
+
+q
+% Row Background
+0.97 0.98 0.99 rg
+40.0 535.89 515.28 13 re f
+% Bottom subtle divider line
+0.88 0.91 0.94 RG 0.4 w
+40.0 535.89 m 555.28 535.89 l S
+
+% Label Column
+0.25 0.32 0.4 rg
+BT
+/F2 7.2 Tf
+46.0 539.39 Td
+(2.6 Impacted Banking Infrastructure) Tj
+ET
+
+% Value Column
+0.08 0.12 0.18 rg
+BT
+/F1 7.2 Tf
+200.0 539.39 Td
+(UPI Bulk Gateway / NPCI Inter-Bank Switch) Tj
+ET
+Q
+
+q
+% Section Header Bar
+0.92 0.94 0.97 rg
+40.0 514.39 515.28 15 re f
+0.08 0.16 0.28 rg
+40.0 514.39 3.5 15 re f
+0.08 0.16 0.28 rg
+BT
+/F2 8.5 Tf
+48.0 518.39 Td
+(3.0 TECHNICAL FORENSICS & MULTI-IP INDICATORS OF COMPROMISE \(IoCs\)) Tj
+ET
+Q
+
+q
+% Row Background
+1 1 1 rg
+40.0 496.39 515.28 13 re f
+% Bottom subtle divider line
+0.88 0.91 0.94 RG 0.4 w
+40.0 496.39 m 555.28 496.39 l S
+
+% Label Column
+0.25 0.32 0.4 rg
+BT
+/F2 7.2 Tf
+46.0 499.89 Td
+(3.1 Primary Attacker / C2 IP) Tj
+ET
+
+% Value Column
+0.8 0.1 0.1 rg
+BT
+/F2 7.2 Tf
+200.0 499.89 Td
+(198.51.100.44 \(Primary C2 Gateway - Amsterdam, NL\)) Tj
+ET
+Q
+
+q
+% Row Background
+0.97 0.98 0.99 rg
+40.0 482.89 515.28 13 re f
+% Bottom subtle divider line
+0.88 0.91 0.94 RG 0.4 w
+40.0 482.89 m 555.28 482.89 l S
+
+% Label Column
+0.25 0.32 0.4 rg
+BT
+/F2 7.2 Tf
+46.0 486.39 Td
+(3.2 Proxy / Tor Anonymizer Nodes) Tj
+ET
+
+% Value Column
+0.8 0.1 0.1 rg
+BT
+/F2 7.2 Tf
+200.0 486.39 Td
+(185.220.101.5 \(Tor Exit Node - Frankfurt, DE\), 103.251.167.20 \(Residential Proxy - Si) Tj
+ET
+Q
+
+q
+% Row Background
+1 1 1 rg
+40.0 469.39 515.28 13 re f
+% Bottom subtle divider line
+0.88 0.91 0.94 RG 0.4 w
+40.0 469.39 m 555.28 469.39 l S
+
+% Label Column
+0.25 0.32 0.4 rg
+BT
+/F2 7.2 Tf
+46.0 472.89 Td
+(3.3 Additional Botnet / Relay IPs) Tj
+ET
+
+% Value Column
+0.8 0.1 0.1 rg
+BT
+/F2 7.2 Tf
+200.0 472.89 Td
+(194.26.29.112 \(Bot Node - Moscow, RU\)) Tj
+ET
+Q
+
+q
+% Row Background
+0.97 0.98 0.99 rg
+40.0 455.89 515.28 13 re f
+% Bottom subtle divider line
+0.88 0.91 0.94 RG 0.4 w
+40.0 455.89 m 555.28 455.89 l S
+
+% Label Column
+0.25 0.32 0.4 rg
+BT
+/F2 7.2 Tf
+46.0 459.39 Td
+(3.4 Affected Internal Asset Endpoints) Tj
+ET
+
+% Value Column
+0.08 0.12 0.18 rg
+BT
+/F1 7.2 Tf
+200.0 459.39 Td
+(10.14.8.102 \(api-gw-upi.bank.internal\), 10.14.2.45 \(auth-oauth2.bank.internal\)) Tj
+ET
+Q
+
+q
+% Row Background
+1 1 1 rg
+40.0 442.39 515.28 13 re f
+% Bottom subtle divider line
+0.88 0.91 0.94 RG 0.4 w
+40.0 442.39 m 555.28 442.39 l S
+
+% Label Column
+0.25 0.32 0.4 rg
+BT
+/F2 7.2 Tf
+46.0 445.89 Td
+(3.5 Compromised Credential / Token) Tj
+ET
+
+% Value Column
+0.08 0.12 0.18 rg
+BT
+/F1 7.2 Tf
+200.0 445.89 Td
+(OAuth2 Bearer Token for 'svc_payment_gw') Tj
+ET
+Q
+
+q
+% Row Background
+0.97 0.98 0.99 rg
+40.0 428.89 515.28 13 re f
+% Bottom subtle divider line
+0.88 0.91 0.94 RG 0.4 w
+40.0 428.89 m 555.28 428.89 l S
+
+% Label Column
+0.25 0.32 0.4 rg
+BT
+/F2 7.2 Tf
+46.0 432.39 Td
+(3.6 Malicious Signature / Hash) Tj
+ET
+
+% Value Column
+0.08 0.12 0.18 rg
+BT
+/F1 7.2 Tf
+200.0 432.39 Td
+(SHA256: 4f98d9e2b4510aa18992cde8710b14ea987b213f9821a89c927f8a12bcde8901) Tj
+ET
+Q
+
+q
+% Row Background
+1 1 1 rg
+40.0 415.39 515.28 13 re f
+% Bottom subtle divider line
+0.88 0.91 0.94 RG 0.4 w
+40.0 415.39 m 555.28 415.39 l S
+
+% Label Column
+0.25 0.32 0.4 rg
+BT
+/F2 7.2 Tf
+46.0 418.89 Td
+(3.7 Autonomous Correlation Tool) Tj
+ET
+
+% Value Column
+0.08 0.12 0.18 rg
+BT
+/F1 7.2 Tf
+200.0 418.89 Td
+(VIGIL ES|QL Forensic Correlator \(14.2ms Execution Latency\)) Tj
+ET
+Q
+
+q
+0.8 0.85 0.9 RG 0.5 w
+40.0 32 m 555.28 32 l S
+0.4 0.45 0.52 rg
+BT
+/F1 6.8 Tf
+40.0 20 Td
+(VIGIL Autonomous AI SOC Analyst | Statutory Filing under Section 70B IT Act 2000 | Form Annexure-1) Tj
+490.28 20 Td
+(Page 1 of 2) Tj
+ET
+Q
+
+endstream
+endobj
+6 0 obj
+<< /Length 6680 >>
+stream
+
+q
+0.08 0.16 0.28 rg
+40.0 769.89 515.28 36 re f
+
+1 1 1 rg
+BT
+/F2 10.5 Tf
+54.0 789.89 Td
+(INDIAN COMPUTER EMERGENCY RESPONSE TEAM (CERT-In) - ANNEXURE 1 CONTINUED) Tj
+ET
+
+0.35 0.75 1 rg
+BT
+/F2 7.5 Tf
+54.0 777.89 Td
+(INCIDENT REFERENCE: INC-2026-0902-01 | SECTOR: BANKING & FINANCIAL SERVICES \(BFSI\)) Tj
+ET
+Q
+
+q
+% Section Header Bar
+0.92 0.94 0.97 rg
+40.0 740.89 515.28 15 re f
+0.08 0.16 0.28 rg
+40.0 740.89 3.5 15 re f
+0.08 0.16 0.28 rg
+BT
+/F2 8.5 Tf
+48.0 744.89 Td
+(4.0 RUPEE FINANCIAL EXPOSURE & IMPACT ASSESSMENT) Tj
+ET
+Q
+
+q
+% Row Background
+1 1 1 rg
+40.0 722.89 515.28 13 re f
+% Bottom subtle divider line
+0.88 0.91 0.94 RG 0.4 w
+40.0 722.89 m 555.28 722.89 l S
+
+% Label Column
+0.25 0.32 0.4 rg
+BT
+/F2 7.2 Tf
+46.0 726.39 Td
+(4.1 Direct Rupee Funds at Risk \(INR\)) Tj
+ET
+
+% Value Column
+0.8 0.1 0.1 rg
+BT
+/F2 7.2 Tf
+200.0 726.39 Td
+(Rs. 18,240,000.00) Tj
+ET
+Q
+
+q
+% Row Background
+0.97 0.98 0.99 rg
+40.0 709.39 515.28 13 re f
+% Bottom subtle divider line
+0.88 0.91 0.94 RG 0.4 w
+40.0 709.39 m 555.28 709.39 l S
+
+% Label Column
+0.25 0.32 0.4 rg
+BT
+/F2 7.2 Tf
+46.0 712.89 Td
+(4.2 Customer Blast Radius Breakdown) Tj
+ET
+
+% Value Column
+0.08 0.12 0.18 rg
+BT
+/F1 7.2 Tf
+200.0 712.89 Td
+(18 Total Accounts \(4 Corporate, 14 HNI / Private Wealth\)) Tj
+ET
+Q
+
+q
+% Row Background
+1 1 1 rg
+40.0 695.89 515.28 13 re f
+% Bottom subtle divider line
+0.88 0.91 0.94 RG 0.4 w
+40.0 695.89 m 555.28 695.89 l S
+
+% Label Column
+0.25 0.32 0.4 rg
+BT
+/F2 7.2 Tf
+46.0 699.39 Td
+(4.3 Customer PII / Statement Leakage) Tj
+ET
+
+% Value Column
+0.08 0.12 0.18 rg
+BT
+/F1 7.2 Tf
+200.0 699.39 Td
+(NO PII EXFILTRATED \(Intercepted before clearance\)) Tj
+ET
+Q
+
+q
+% Row Background
+0.97 0.98 0.99 rg
+40.0 682.39 515.28 13 re f
+% Bottom subtle divider line
+0.88 0.91 0.94 RG 0.4 w
+40.0 682.39 m 555.28 682.39 l S
+
+% Label Column
+0.25 0.32 0.4 rg
+BT
+/F2 7.2 Tf
+46.0 685.89 Td
+(4.4 Payment Switch & Ledger Status) Tj
+ET
+
+% Value Column
+0.08 0.12 0.18 rg
+BT
+/F1 7.2 Tf
+200.0 685.89 Td
+(OPERATIONAL \(Unauthorized batch quarantined in-flight\)) Tj
+ET
+Q
+
+q
+% Row Background
+1 1 1 rg
+40.0 668.89 515.28 13 re f
+% Bottom subtle divider line
+0.88 0.91 0.94 RG 0.4 w
+40.0 668.89 m 555.28 668.89 l S
+
+% Label Column
+0.25 0.32 0.4 rg
+BT
+/F2 7.2 Tf
+46.0 672.39 Td
+(4.5 Business Continuity Status) Tj
+ET
+
+% Value Column
+0.08 0.12 0.18 rg
+BT
+/F1 7.2 Tf
+200.0 672.39 Td
+(Green / Normal \(No disruption to retail banking customers\)) Tj
+ET
+Q
+
+q
+% Section Header Bar
+0.92 0.94 0.97 rg
+40.0 647.39 515.28 15 re f
+0.08 0.16 0.28 rg
+40.0 647.39 3.5 15 re f
+0.08 0.16 0.28 rg
+BT
+/F2 8.5 Tf
+48.0 651.39 Td
+(5.0 REMEDIAL, MITIGATION & CONTAINMENT ACTIONS EXECUTED) Tj
+ET
+Q
+
+q
+% Row Background
+1 1 1 rg
+40.0 629.39 515.28 13 re f
+% Bottom subtle divider line
+0.88 0.91 0.94 RG 0.4 w
+40.0 629.39 m 555.28 629.39 l S
+
+% Label Column
+0.25 0.32 0.4 rg
+BT
+/F2 7.2 Tf
+46.0 632.89 Td
+(5.1 Perimeter Firewall Action) Tj
+ET
+
+% Value Column
+0.8 0.1 0.1 rg
+BT
+/F2 7.2 Tf
+200.0 632.89 Td
+(Null-routed 4 attacker IPs on Edge Gateway & Cloud WAF [EXECUTED]) Tj
+ET
+Q
+
+q
+% Row Background
+0.97 0.98 0.99 rg
+40.0 615.89 515.28 13 re f
+% Bottom subtle divider line
+0.88 0.91 0.94 RG 0.4 w
+40.0 615.89 m 555.28 615.89 l S
+
+% Label Column
+0.25 0.32 0.4 rg
+BT
+/F2 7.2 Tf
+46.0 619.39 Td
+(5.2 IAM Token Invalidation) Tj
+ET
+
+% Value Column
+0.8 0.1 0.1 rg
+BT
+/F2 7.2 Tf
+200.0 619.39 Td
+(Revoked OAuth2 Bearer token for svc_payment_gw [EXECUTED]) Tj
+ET
+Q
+
+q
+% Row Background
+1 1 1 rg
+40.0 602.39 515.28 13 re f
+% Bottom subtle divider line
+0.88 0.91 0.94 RG 0.4 w
+40.0 602.39 m 555.28 602.39 l S
+
+% Label Column
+0.25 0.32 0.4 rg
+BT
+/F2 7.2 Tf
+46.0 605.89 Td
+(5.3 Payment Settlement Gate) Tj
+ET
+
+% Value Column
+0.8 0.1 0.1 rg
+BT
+/F2 7.2 Tf
+200.0 605.89 Td
+(Placed batch BATCH-20260902-8821 on debit hold in NPCI switch [EXECUTED]) Tj
+ET
+Q
+
+q
+% Row Background
+0.97 0.98 0.99 rg
+40.0 588.89 515.28 13 re f
+% Bottom subtle divider line
+0.88 0.91 0.94 RG 0.4 w
+40.0 588.89 m 555.28 588.89 l S
+
+% Label Column
+0.25 0.32 0.4 rg
+BT
+/F2 7.2 Tf
+46.0 592.39 Td
+(5.4 Mule Account Freezes) Tj
+ET
+
+% Value Column
+0.8 0.1 0.1 rg
+BT
+/F2 7.2 Tf
+200.0 592.39 Td
+(Placed immediate liens on 14 recipient VPAs [EXECUTED]) Tj
+ET
+Q
+
+q
+% Row Background
+1 1 1 rg
+40.0 575.39 515.28 13 re f
+% Bottom subtle divider line
+0.88 0.91 0.94 RG 0.4 w
+40.0 575.39 m 555.28 575.39 l S
+
+% Label Column
+0.25 0.32 0.4 rg
+BT
+/F2 7.2 Tf
+46.0 578.89 Td
+(5.5 Digital Evidence Preservation) Tj
+ET
+
+% Value Column
+0.08 0.12 0.18 rg
+BT
+/F1 7.2 Tf
+200.0 578.89 Td
+(SEALED in SHA-256 Immutable Audit Ledger & AWS S3 WORM Storage) Tj
+ET
+Q
+
+q
+% Row Background
+0.97 0.98 0.99 rg
+40.0 561.89 515.28 13 re f
+% Bottom subtle divider line
+0.88 0.91 0.94 RG 0.4 w
+40.0 561.89 m 555.28 561.89 l S
+
+% Label Column
+0.25 0.32 0.4 rg
+BT
+/F2 7.2 Tf
+46.0 565.39 Td
+(5.6 Real-Time Telemetry Stream) Tj
+ET
+
+% Value Column
+0.08 0.12 0.18 rg
+BT
+/F1 7.2 Tf
+200.0 565.39 Td
+(Elastic Cloud live monitoring active \(1-minute heartbeat telemetry\)) Tj
+ET
+Q
+
+q
+% Section Header Bar
+0.92 0.94 0.97 rg
+40.0 538.39 515.28 15 re f
+0.08 0.16 0.28 rg
+40.0 538.39 3.5 15 re f
+0.08 0.16 0.28 rg
+BT
+/F2 8.5 Tf
+48.0 542.39 Td
+(6.0 STATUTORY DECLARATION & FORMAL NODAL SIGN-OFF) Tj
+ET
+Q
+
+q
+% Formal Certificate Border
+0.96 0.97 0.99 rg
+40.0 433.39 515.28 100.0 re f
+0.82 0.86 0.9 RG 0.8 w
+40.0 433.39 515.28 100.0 re S
+
+% Left Accent Ribbon
+0.08 0.16 0.28 rg
+40.0 433.39 3.5 100.0 re f
+
+% Declaration Legal Text
+0.2 0.26 0.35 rg
+BT
+/F2 7 Tf
+52.0 519.39 Td
+(STATUTORY DECLARATION UNDER SECTION 70B OF IT ACT, 2000 & CERT-In DIRECTIONS 2022:) Tj
+/F1 6.5 Tf
+52.0 507.39 Td
+(I hereby confirm that this cyber security incident notification has been generated and validated by the VIGIL) Tj
+52.0 497.39 Td
+(Autonomous Incident Response Engine in coordination with the CISO Nodal Office. All indicators of compromise,) Tj
+52.0 487.39 Td
+(affected asset vectors, rupee exposure figures, and containment actions are authentic and cryptographically sealed.) Tj
+ET
+
+% Digital Signature & Authorization
+0.08 0.16 0.28 rg
+BT
+/F2 7.5 Tf
+52.0 467.39 Td
+(Digitally Authorized & Submitted by:) Tj
+/F2 8.5 Tf
+52.0 454.39 Td
+(Rajeshwar Varma | Chief Information Security Officer) Tj
+/F1 6.8 Tf
+52.0 443.39 Td
+(Apex Commercial Bank of India Ltd | Certified Public Key: 0x8F92..BC10 | Mumbai HQ) Tj
+ET
+
+% Official Seal Badge
+0.8 0.12 0.12 rg
+435.28 443.39 108 34 re f
+1 1 1 rg
+BT
+/F2 8 Tf
+443.28 465.39 Td
+(OFFICIALLY SEALED) Tj
+/F1 6 Tf
+443.28 455.39 Td
+(SHA-256 HASH VERIFIED) Tj
+/F1 5.8 Tf
+443.28 447.39 Td
+(S3 WORM OBJECT LOCK) Tj
+ET
+Q
+
+q
+0.8 0.85 0.9 RG 0.5 w
+40.0 32 m 555.28 32 l S
+0.4 0.45 0.52 rg
+BT
+/F1 6.8 Tf
+40.0 20 Td
+(VIGIL Autonomous AI SOC Analyst | Statutory Filing under Section 70B IT Act 2000 | Form Annexure-1) Tj
+490.28 20 Td
+(Page 2 of 2) Tj
+ET
+Q
+
+endstream
+endobj
+xref
+0 7
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000127 00000 n 
+0000000384 00000 n 
+0000000641 00000 n 
+0000009171 00000 n 
+trailer
+<< /Size 7
+   /Root 1 0 R
+>>
+startxref
+15903
+%%EOF
