@@ -104,6 +104,11 @@ interface ScenarioConfig {
   current_step: number;
   compromised_user: string;
   attacker_ip: string;
+  attacker_ips: string[];
+  target_assets: string[];
+  compromised_credentials: string;
+  payload_hash: string;
+  payment_channel: string;
   batch_id: string;
   impact_summary: string;
   affected_systems: string[];
@@ -149,301 +154,322 @@ interface ScenarioConfig {
   step4: {
     actions: {
       title: string;
-      system: string;
-      type: string;
       description: string;
+      system: string;
+      api_payload: Record<string, any>;
     }[];
     containment_success_msg: string;
   };
   step5: {
-    certin_title: string;
     affected_systems: string;
     remedial_summary: string;
   };
   step6: {
-    sha256_hash: string;
+    block_hash: string;
+    prev_hash: string;
     merkle_root: string;
-    block_id: number;
   };
   topology: TopologyNode[];
   timeline: TimelineEvent[];
   copilot_prompts: AICopilotPrompt[];
-  terminal: {
-    default_query: string;
-    preset1_label: string;
-    preset1_query: string;
-    preset2_label: string;
-    preset2_query: string;
-  };
-  indic: {
-    hi: string;
-    mr: string;
-    ta: string;
-    te: string;
-    bn: string;
-  };
-  escalation: {
-    slack_channel: string;
-    pagerduty_urgency: string;
-    jira_summary: string;
-  };
+  indic: Record<string, string>;
 }
 
-const SCENARIOS_DATA: ScenarioConfig[] = [
+// 8 Rich Banking Use Cases Configuration
+const INITIAL_SCENARIOS: ScenarioConfig[] = [
   {
     incident_id: "INC-2026-0902-01",
     title: "Privileged OAuth2 Token Theft & Unauthorized UPI Bulk Draining",
     severity: "CRITICAL",
-    threat_tactic: "Privilege Escalation & Financial Fraud",
+    threat_tactic: "Privilege Escalation / Financial Exfiltration",
     mitre_id: "T1078.004",
     direct_exposure_inr: 18240000.00,
     is_material: true,
     rbi_status: "MANDATORY_6_HOUR_FILING",
-    current_step: 4,
+    current_step: 6,
     compromised_user: "svc_payment_gw",
     attacker_ip: "198.51.100.44",
+    attacker_ips: [
+      "198.51.100.44 (Primary C2 Gateway - Amsterdam, NL)",
+      "185.220.101.5 (Tor Exit Node - Frankfurt, DE)",
+      "103.251.167.20 (Residential Proxy - Singapore)",
+      "194.26.29.112 (Bot Node - Moscow, RU)"
+    ],
+    target_assets: [
+      "10.14.8.102 (api-gw-upi.bank.internal)",
+      "10.14.2.45 (auth-oauth2.bank.internal)",
+      "10.14.0.10 (cbs-clearing-engine.bank.internal)"
+    ],
+    compromised_credentials: "OAuth2 Bearer Token for 'svc_payment_gw'",
+    payload_hash: "SHA256: 4f98d9e2b4510aa18992cde8710b14ea987b213f9821a89c927f8a12bcde8901",
+    payment_channel: "UPI Bulk Gateway / NPCI Inter-Bank Switch",
     batch_id: "BATCH-20260902-8821",
-    impact_summary: "Automated API key compromise draining merchant accounts via UPI high-risk velocity burst.",
-    affected_systems: ["UPI Payment Gateway", "NPCI Inter-Bank Switch", "Core Banking IMPS Switch"],
+    impact_summary: "Adversary brute-forced staging API Gateway, stole OAuth2 bearer token for svc_payment_gw, and triggered 120 unauthorized bulk UPI payment requests.",
+    affected_systems: ["api-gw-upi.bank.internal", "auth-oauth2.bank.internal", "cbs-clearing-engine.bank.internal"],
     step1: {
-      rbi_ref: "RBI/2021-22/Master-Direction-Payment-Security-Controls-Sec-4.2",
-      certin_category: "CIAD-2022-04 Unauthorized Access & Financial Fraud",
-      threshold_desc: "Direct financial exposure > ₹10,00,000 threshold & systemic payment gateway compromise.",
-      clock_status: "Clock Running: 5h 48m remaining to submit Annexure-1",
-      penalty_at_stake: "₹ 1,00,00,000 (Sec 70B Non-Compliance)",
-      reasoning_bullet: "Critical velocity spike: 14 rapid UPI drains across 6 banks; OAuth2 token lacks IP pinning."
+      rbi_ref: "RBI/2023-24/CSIR/04 - Cyber Security Framework in Banks (Annex-1)",
+      certin_category: "CIAD-2022-04 Unauthorized Access to Payment Gateway & Financial Fraud",
+      threshold_desc: "Direct financial exposure exceeds RBI ₹1.00 Crore material threshold (Actual: ₹ 1.82 Crore).",
+      clock_status: "6-Hour Statutory SLA Active (Filing Completed in 4.2 mins)",
+      penalty_at_stake: "₹ 50,00,000 + Executive Regulatory Inquiry",
+      reasoning_bullet: "High velocity token exfiltration targeting NPCI batch clearance switch."
     },
     step2: {
-      autonomous_detection_title: "Stage 1: Autonomous Threat Hunting (Zero Hardcoded IOCs)",
-      autonomous_detection_query: "FROM logs-banking-*\n| WHERE bank.channel == \"UPI_GATEWAY\" AND bank.aml_risk_score > 85.0\n| STATS total_drained = sum(bank.amount_inr), tx_count = count() BY source.ip, user.name, bank.batch_id\n| WHERE tx_count >= 5 AND total_drained > 1000000.00\n| SORT total_drained DESC",
-      autonomous_detection_explanation: "Identifies anomalous high-velocity aggregation across payment streams where AML risk is critical without prior knowledge of attacker IP.",
-      forensic_blast_radius_title: "Stage 2: Lateral Movement & Blast Radius Pivot",
-      forensic_blast_radius_query: "FROM logs-banking-*\n| WHERE source.ip == \"198.51.100.44\" OR user.name == \"svc_payment_gw\"\n| KEEP @timestamp, source.ip, user.name, bank.account_id, bank.amount_inr, bank.customer_tier, bank.beneficiary_vpa\n| SORT @timestamp DESC\n| LIMIT 10",
-      discovered_entity: "198.51.100.44 (External Ingress IP)",
-      compromised_id: "svc_payment_gw (OAuth2 Payment Daemon)",
+      autonomous_detection_title: "ES|QL Query: Stolen OAuth Token Ingress from Anomalous CIDR",
+      autonomous_detection_query: `FROM logs-auth-default
+| WHERE event.outcome == "success" AND user.name == "svc_payment_gw" AND source.ip == "198.51.100.44"
+| STATS count() by user.name, source.ip, destination.ip`,
+      autonomous_detection_explanation: "Detected high-privilege service account token utilized from untrusted external Dutch IP address.",
+      forensic_blast_radius_title: "ES|QL Query: Rupee Exposure & Target Beneficiary Mapping",
+      forensic_blast_radius_query: `FROM logs-banking-default
+| WHERE bank.batch_id == "BATCH-20260902-8821"
+| STATS sum(bank.amount_inr) as total_rupees, count_distinct(bank.account_id) as affected_accounts by bank.channel`,
+      discovered_entity: "198.51.100.44 (Attacker C2)",
+      compromised_id: "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...",
       sample_table: {
-        columns: ["@timestamp", "user.name", "bank.beneficiary_vpa", "bank.amount_inr", "bank.customer_tier"],
+        columns: ["@timestamp", "source.ip", "user.name", "bank.batch_id", "bank.amount_inr", "event.outcome"],
         rows: [
-          ["2026-09-02T19:24:12Z", "svc_payment_gw", "merchant.bulk@yesbank", 4200000.00, "Corporate"],
-          ["2026-09-02T19:24:35Z", "svc_payment_gw", "merchant.bulk@yesbank", 3800000.00, "Corporate"],
-          ["2026-09-02T19:25:01Z", "svc_payment_gw", "merchant.bulk@yesbank", 2900000.00, "Corporate"],
-          ["2026-09-02T19:25:28Z", "svc_payment_gw", "merchant.bulk@yesbank", 4140000.00, "Corporate"],
-          ["2026-09-02T19:25:49Z", "svc_payment_gw", "merchant.bulk@yesbank", 3200000.00, "HNI"]
+          ["2026-09-02T17:09:46Z", "198.51.100.44", "svc_payment_gw", "BATCH-20260902-8821", "1,82,40,000.00", "SUCCESS"],
+          ["2026-09-02T17:08:12Z", "198.51.100.44", "svc_payment_gw", "AUTH-PROBE-01", "0.00", "SUCCESS"],
+          ["2026-09-02T17:05:01Z", "198.51.100.44", "svc_payment_gw", "AUTH-PROBE-00", "0.00", "FAILURE"]
         ]
       }
     },
     step3: {
-      corporate_count: 3,
-      hni_count: 15,
+      corporate_count: 4,
+      hni_count: 14,
       affected_accounts_total: 18,
-      account_examples: "Tata Power Global, Reliance Retail Merchant, HNI-Apex-9901",
-      business_risk_level: "CRITICAL (₹ 1.82 Crore Direct Exposure)",
-      penalty_saved: "₹ 1,00,00,000 RBI Penalty Averted",
-      core_systems_affected: "UPI Switch Cluster #3 (Mumbai DC)",
+      account_examples: "Tata Consultancy Corporate Salary VPA, Infosys Vendor Pool, 14 HNI Accounts",
+      business_risk_level: "CRITICAL REGULATORY EXPOSURE",
+      penalty_saved: "₹ 50,00,000 Saved via Timely Containment",
+      core_systems_affected: "Core Banking Engine (CBS), NPCI UPI Settlement Queue, IMPS Outbound Gateway",
       accounts_table: [
-        { account_id: "ACC-CORP-8812901", name: "Bharat Logistics Global Corp", tier: "Corporate", balance_inr: 28000000.00, exposed_inr: 6400000.00, status: "FROZEN_PRESERVED", branch: "Nariman Point, Mumbai" },
-        { account_id: "ACC-CORP-4491023", name: "Zenith Retail Mega-Merchants", tier: "Corporate", balance_inr: 15400000.00, exposed_inr: 5800000.00, status: "FROZEN_PRESERVED", branch: "BKC Tech Hub, Mumbai" },
-        { account_id: "ACC-CORP-1092834", name: "Kaveri Infra Solutions Ltd", tier: "Corporate", balance_inr: 9200000.00, exposed_inr: 3200000.00, status: "FROZEN_PRESERVED", branch: "Connaught Place, New Delhi" },
-        { account_id: "ACC-HNI-9912041", name: "R. Singhania (Private Wealth)", tier: "HNI", balance_inr: 4500000.00, exposed_inr: 1440000.00, status: "FROZEN_PRESERVED", branch: "Indiranagar, Bengaluru" },
-        { account_id: "ACC-HNI-3301928", name: "Dr. K. S. Venkatesh", tier: "HNI", balance_inr: 3800000.00, exposed_inr: 1400000.00, status: "FROZEN_PRESERVED", branch: "Banjara Hills, Hyderabad" }
+        { account_id: "ACC-9021841", name: "Apex Corporate Treasury Pool", tier: "Corporate", balance_inr: 85000000.00, exposed_inr: 6500000.00, status: "FROZEN_PRESERVED", branch: "Fort Mumbai (0001)" },
+        { account_id: "ACC-8812940", name: "Global Logistics Escrow", tier: "Corporate", balance_inr: 42000000.00, exposed_inr: 4800000.00, status: "FROZEN_PRESERVED", branch: "Nariman Point (0004)" },
+        { account_id: "ACC-1092847", name: "Dr. Vikram Singhania (HNI)", tier: "HNI", balance_inr: 18500000.00, exposed_inr: 1200000.00, status: "FROZEN_PRESERVED", branch: "Bandra West (0012)" },
+        { account_id: "ACC-3847291", name: "Rajeshwar Infrastructure Ltd", tier: "Corporate", balance_inr: 95000000.00, exposed_inr: 3400000.00, status: "FROZEN_PRESERVED", branch: "Connaught Place (0020)" },
+        { account_id: "ACC-5591823", name: "Meera Oberoi Wealth Account", tier: "HNI", balance_inr: 12400000.00, exposed_inr: 2340000.00, status: "FROZEN_PRESERVED", branch: "MG Road Bengaluru (0008)" }
       ]
     },
     step4: {
       actions: [
-        { title: "Revoke OAuth2 Bearer Token", system: "API Gateway (WAF-Edge-01)", type: "IAM", description: "Immediately invalidate active bearer session for svc_payment_gw." },
-        { title: "Drop Ingress IP 198.51.100.44", system: "Cloudflare / Perimeter Firewall", type: "Network", description: "Null-route all ingress packets from threat origin ASN." },
-        { title: "Place Debit Freeze on Outbound Settlement Batch", system: "Core Banking Engine (CBS)", type: "Core Banking", description: "Suspend batch BATCH-20260902-8821 in NPCI clearing queue." }
+        { title: "Null-Route Malicious Ingress IP on Edge Firewalls", description: "Injected BGP null-route for 198.51.100.44 into Cloudflare Magic Transit & Edge Cisco ASA.", system: "Perimeter Firewall (palo-alto-gw01)", api_payload: { action: "BLOCK_IP", ip: "198.51.100.44", ttl: "86400s" } },
+        { title: "Revoke Leaked OAuth2 Bearer Token in IAM Gateway", description: "Invalidated JWT session signature and rotated shared HMAC secret for service 'svc_payment_gw'.", system: "Identity Gateway (keycloak-auth-prod)", api_payload: { action: "REVOKE_TOKEN", subject: "svc_payment_gw", force_logout: true } },
+        { title: "Place NPCI Outbound UPI Batch Queue on Debit Hold", description: "Suspended batch settlement BATCH-20260902-8821 in National Automated Clearing House engine.", system: "Core Settlement Hub (npci-switch-v4)", api_payload: { action: "SUSPEND_BATCH", batch_id: "BATCH-20260902-8821" } },
+        { title: "Apply Forensic Debit Freeze on 18 Compromised Target Accounts", description: "Enforced debit lien code 'FRAUD_SUSP_SEC70B' on affected accounts to prevent secondary laundering.", system: "Finacle Core Banking (cbs-prod-cluster)", api_payload: { action: "APPLY_LIEN", code: "FRAUD_SUSP_SEC70B", count: 18 } }
       ],
-      containment_success_msg: "Automated Containment Rules Dispatched: Token revoked, IP blocked, and ₹1.82 Cr payout queue halted."
+      containment_success_msg: "All 4 automated containment runbooks executed in 14.2 milliseconds. Zero rupee loss realized."
     },
     step5: {
-      certin_title: "CYBER SECURITY INCIDENT REPORTING FORM - ANNEXURE 1",
-      affected_systems: "UPI Gateway / Merchant Settlement Switch",
-      remedial_summary: "OAuth2 bearer token revoked, ingress IP null-routed, settlement batch quarantined."
+      affected_systems: "api-gateway.bank.internal (10.0.4.12), npci-switch-v4 (10.0.8.50)",
+      remedial_summary: "Leaked credentials invalidated; IP null-routed; settlement batch paused; 18 accounts secured."
     },
     step6: {
-      sha256_hash: "0x7a3f89e219ba482c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c",
-      merkle_root: "0x9c4172f8812e99a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5",
-      block_id: 105
+      block_hash: "0x8f9c1e4d8a7b6c5e3f2a1d0b9c8e7f6a5b4c3d2e1f0a9b8c7d6e5f4a3b2c1d0",
+      prev_hash: "0x7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8",
+      merkle_root: "0x11223344556677889900aabbccddeeff11223344556677889900aabbccddeeff"
     },
     topology: [
-      { id: "node-1", label: "External Threat Actor", type: "ATTACKER", ip: "198.51.100.44", geo: "Tor Exit / Offshore", status: "BLOCKED", protocol: "HTTPS / TLS 1.3", mitre_tag: "T1078.004 Valid Accounts", details: "Forged OAuth2 Bearer token with elevated payment dispatch privileges." },
-      { id: "node-2", label: "WAF & API Gateway", type: "GATEWAY", ip: "10.0.4.12", geo: "AWS Mumbai (ap-south-1)", status: "ACTIVE", protocol: "REST / JSON", mitre_tag: "T1190 Exploit Public-Facing App", details: "Ingress point for svc_payment_gw API transactions." },
-      { id: "node-3", label: "UPI Switch Cluster", type: "CORE_SYSTEM", ip: "10.0.8.50", geo: "Mumbai On-Prem DC", status: "ISOLATED", protocol: "ISO 8583 / NPCI API", mitre_tag: "T1565.001 Data Manipulation", details: "High-speed inter-bank routing switch for instant settlements." },
-      { id: "node-4", label: "Core Banking System (CBS)", type: "TARGET", ip: "10.2.0.1", geo: "Secure Treasury Enclave", status: "FROZEN", protocol: "Finacle RPC", mitre_tag: "T1005 Data from Local System", details: "Debit accounts held across Corporate & HNI tiers." }
+      { id: "node-att", label: "External Threat C2", type: "ATTACKER", ip: "198.51.100.44", geo: "Amsterdam, NL", status: "BLOCKED", protocol: "HTTPS/REST", mitre_tag: "T1078.004", details: "Adversary command & control server launching automated token replay scripts." },
+      { id: "node-gw", label: "API Gateway (DMZ)", type: "GATEWAY", ip: "10.0.4.12", geo: "Mumbai DC Tier-IV", status: "COMPROMISED", protocol: "mTLS/OAuth2", mitre_tag: "T1190", details: "Public-facing bank API reverse proxy handling incoming UPI callback webhooks." },
+      { id: "node-auth", label: "IAM Auth Cluster", type: "CORE_SYSTEM", ip: "10.0.2.45", geo: "Navi Mumbai DC", status: "ISOLATED", protocol: "Kerberos/JWT", mitre_tag: "T1558", details: "Central OAuth2 authorization server managing bank microservice bearer tokens." },
+      { id: "node-cbs", label: "Finacle CBS Engine", type: "TARGET", ip: "10.0.8.50", geo: "Mumbai Core DC", status: "FROZEN", protocol: "ISO 8583 / JSON", mitre_tag: "T1565.001", details: "Primary core banking ledger where ₹ 1.82 Crore batch disbursement was attempted." }
     ],
     timeline: [
-      { offset: "+00:00", time: "19:15:02 UTC", title: "API Key Credential Theft", tactic: "Credential Access", source_ip: "198.51.100.44", description: "Attacker acquired valid OAuth2 refresh token from misconfigured staging CI/CD pipeline.", severity: "CRITICAL", raw_ecs: { "@timestamp": "2026-09-02T19:15:02Z", "event.category": "authentication", "event.outcome": "success", "user.name": "svc_payment_gw", "source.ip": "198.51.100.44" } },
-      { offset: "+00:09", time: "19:24:12 UTC", title: "Rapid UPI Drain Burst Initiated", tactic: "Execution", source_ip: "198.51.100.44", description: "14 parallel high-value UPI payout requests sent in 110 seconds.", severity: "CRITICAL", raw_ecs: { "@timestamp": "2026-09-02T19:24:12Z", "bank.channel": "UPI_GATEWAY", "bank.amount_inr": 4200000.0, "bank.aml_risk_score": 98.4 } },
-      { offset: "+00:11", time: "19:26:15 UTC", title: "Vigil Alert Zero Triggered", tactic: "Defense Evasion", source_ip: "10.0.8.50", description: "Vigil AI engine detected AML anomaly and velocity spike exceeding regulatory ceiling.", severity: "HIGH", raw_ecs: { "@timestamp": "2026-09-02T19:26:15Z", "alert.severity": "CRITICAL", "alert.engine": "VIGIL_TIER1_AGENT" } },
-      { offset: "+00:13", time: "19:28:40 UTC", title: "Automated Containment Dispatched", tactic: "Remediation", source_ip: "10.0.4.12", description: "Token revoked, firewall null-route applied, payout settlement queue halted.", severity: "INFO", raw_ecs: { "@timestamp": "2026-09-02T19:28:40Z", "action": "REVOKE_TOKEN_AND_FREEZE", "status": "SUCCESS" } }
+      { offset: "+00:00", time: "17:05:01 UTC", title: "API Auth Brute Force Ingress", tactic: "Credential Access", source_ip: "198.51.100.44", description: "1,420 rapid authentication attempts against /api/v1/auth/token within 60 seconds.", severity: "HIGH", raw_ecs: { "@timestamp": "2026-09-02T17:05:01Z", "event.category": "authentication", "event.outcome": "failure", "source.ip": "198.51.100.44", "http.request.method": "POST" } },
+      { offset: "+00:03", time: "17:08:12 UTC", title: "OAuth2 Bearer Token Compromise", tactic: "Privilege Escalation", source_ip: "198.51.100.44", description: "Valid service token generated for privileged service account 'svc_payment_gw'.", severity: "CRITICAL", raw_ecs: { "@timestamp": "2026-09-02T17:08:12Z", "event.category": "authentication", "event.outcome": "success", "user.name": "svc_payment_gw", "source.ip": "198.51.100.44" } },
+      { offset: "+00:04", time: "17:09:46 UTC", title: "Bulk UPI Payout Batch Injected", tactic: "Financial Exfiltration", source_ip: "198.51.100.44", description: "Unauthorized POST to /api/v2/bulk-disburse containing 120 transactions totaling ₹ 1,82,40,000.", severity: "CRITICAL", raw_ecs: { "@timestamp": "2026-09-02T17:09:46Z", "bank.batch_id": "BATCH-20260902-8821", "bank.amount_inr": 18240000.0, "bank.channel": "UPI" } },
+      { offset: "+00:05", time: "17:09:48 UTC", title: "VIGIL Autonomous Triage & Containment", tactic: "Defense Response", source_ip: "10.0.1.1", description: "ES|QL Correlator triggered containment gate; Token revoked, IP null-routed, Batch paused.", severity: "INFO", raw_ecs: { "@timestamp": "2026-09-02T17:09:48Z", "event.action": "CONTAINMENT_SUCCESS", "vigil.latency_ms": 14.2 } }
     ],
     copilot_prompts: [
-      { question: "Detect high-value UPI drains with elevated AML risk score", esql_query: "FROM logs-banking-*\n| WHERE bank.channel == \"UPI_GATEWAY\" AND bank.aml_risk_score > 85.0\n| STATS total_drained = sum(bank.amount_inr), tx_count = count() BY source.ip, user.name, bank.batch_id\n| SORT total_drained DESC", explanation: "Aggregates transactions where AML score indicates extreme fraudulent behavior." },
-      { question: "List all transactions initiated by service account svc_payment_gw", esql_query: "FROM logs-banking-*\n| WHERE user.name == \"svc_payment_gw\"\n| KEEP @timestamp, source.ip, bank.account_id, bank.amount_inr, bank.beneficiary_vpa\n| SORT @timestamp DESC\n| LIMIT 20", explanation: "Provides granular transaction audit trail for the compromised service account." },
-      { question: "Identify all destination UPI VPAs receiving suspicious funds", esql_query: "FROM logs-banking-*\n| WHERE bank.aml_risk_score > 90.0\n| STATS total_received = sum(bank.amount_inr) BY bank.beneficiary_vpa\n| SORT total_received DESC", explanation: "Maps recipient mule VPAs to place inter-bank liens." }
+      { question: "Show all successful authentications for svc_payment_gw from non-internal IP addresses", esql_query: `FROM logs-auth-default | WHERE user.name == "svc_payment_gw" AND NOT CIDR_MATCH(source.ip, "10.0.0.0/8") | LIMIT 50`, explanation: "Identifies unauthorized token consumption originating from public internet addresses." },
+      { question: "Calculate sum of fraudulent transaction attempts grouped by destination bank branch", esql_query: `FROM logs-banking-default | WHERE bank.batch_id == "BATCH-20260902-8821" | STATS sum(bank.amount_inr) as branch_exposure, count() by bank.branch_code`, explanation: "Quantifies financial blast radius broken down by receiving bank branch codes." },
+      { question: "List top 10 target beneficiary accounts with high AML risk score in this batch", esql_query: `FROM logs-banking-default | WHERE bank.aml_risk_score > 85 | SORT bank.amount_inr DESC | LIMIT 10`, explanation: "Surfaces mule accounts created recently with anomalous high-risk AML profiles." }
     ],
-    terminal: {
-      default_query: "FROM logs-banking-*\n| WHERE bank.channel == \"UPI_GATEWAY\" AND bank.aml_risk_score > 85.0\n| STATS total_drained = sum(bank.amount_inr), tx_count = count() BY source.ip, user.name, bank.batch_id\n| SORT total_drained DESC\n| LIMIT 10",
-      preset1_label: "⚡ Stage 1: Autonomous Detection",
-      preset1_query: "FROM logs-banking-*\n| WHERE bank.channel == \"UPI_GATEWAY\" AND bank.aml_risk_score > 85.0\n| STATS total_drained = sum(bank.amount_inr), tx_count = count() BY source.ip, user.name, bank.batch_id",
-      preset2_label: "🎯 Stage 2: Lateral Pivot",
-      preset2_query: "FROM logs-banking-*\n| WHERE source.ip == \"198.51.100.44\" OR user.name == \"svc_payment_gw\"\n| KEEP @timestamp, source.ip, user.name, bank.account_id, bank.amount_inr, bank.customer_tier\n| LIMIT 10"
-    },
     indic: {
-      hi: "सुरक्षा अलर्ट: अनाधिकृत एपीआई कुंजी (OAuth2) द्वारा यूपीआई भुगतान गेटवे पर संदिग्ध निकासी का पता चला है। तत्काल प्रभाव से टोकन रद्द कर दिया गया है।\n\n📌 शाखा कार्रवाई: ₹ 1.82 करोड़ की संदिग्ध निकासी को रोक दिया गया है। संबंधित मर्चेंट खातों पर डेबिट रोक लगा दी गई है।",
-      mr: "सुरक्षा सूचना: अनधिकृत एपीआई टोकन वापरून यूपीआई गेटवेवरून संशयास्पद रक्कम काढण्याचा प्रयत्न झाला आहे. टोकन तात्काळ रद्द करण्यात आले आहे.\n\n📌 शाखा कृती: ₹ 1.82 कोटींचा व्यवहार रोखण्यात आला असून सर्व खाती सुरक्षित करण्यात आली आहेत.",
-      ta: "பாதுகாப்பு எச்சரிக்கை: அங்கீகரிக்கப்படாத API டோக்கன் மூலம் UPI பணப் பரிவர்த்தனை முயற்சி கண்டறியப்பட்டது. டோக்கன் உடனடியாக ரத்து செய்யப்பட்டது.\n\n📌 கிளை நடவடிக்கை: ₹ 1.82 கோடி பரிவர்த்தனை முடக்கப்பட்டது. தொடர்புடைய கணக்குகள் பாதுகாக்கப்பட்டுள்ளன.",
-      te: "భద్రతా హెచ్చరిక: అనధికారిక API టోకెన్ ద్వారా UPI చెల్లింపు గేట్‌వేలో అనుమానాస్పద లావాదేవీలు గుర్తించబడ్డాయి. టోకెన్ రద్దు చేయబడింది.\n\n📌 బ్రాంచ్ చర్య: ₹ 1.82 కోట్ల అనుమానాస్పద చెల్లింపులు నిలిపివేయబడ్డాయి.",
-      bn: "নিরাপত্তা সতর্কতা: অননুমোদিত API কী ব্যবহার করে UPI গেটওয়েতে সন্দেহজনক লেনদেন শনাক্ত হয়েছে। টোকেন অবিলম্বে বাতিল করা হয়েছে।\n\n📌 শাখা পদক্ষেপ: ₹ 1.82 কোটি টাকার লেনদেন স্থগিত করা হয়েছে।"
-    },
-    escalation: {
-      slack_channel: "#soc-tier1-critical-alerts",
-      pagerduty_urgency: "P1 (IMMEDIATE ESCALATION)",
-      jira_summary: "[CRITICAL] OAuth2 Token Compromise - UPI Bulk Gateway Drain - Ref INC-2026-0902-01"
+      hi: "चेतावनी: अनधिकृत यूपीआई थोक भुगतान प्रयास (₹ 1.82 करोड़) पकड़ा गया। सतर्कता एआई द्वारा टोकन तुरंत रद्द कर दिया गया है और सभी बैंक खाते सुरक्षित कर दिए गए हैं।",
+      mr: "सावधान: अनधिकृत यूपीआय व्यवहार (₹ 1.82 कोटी) शोधून काढले गेले आहे. सतर्कता एआय ने टोकन त्वरित रद्द केले असून सर्व बँक खाती सुरक्षित केली आहेत.",
+      gu: "ચેતવણી: અનધિકૃત યુપીઆઈ ચૂકવણીનો પ્રયાસ (₹ 1.82 કરોડ) પકડાયો છે. વિજિલ એઆઈએ તરત જ ટોકન રદ કર્યું છે અને ખાતાઓ સુરક્ષિત કર્યા છે.",
+      ta: "எச்சரிக்கை: அங்கீகரிக்கப்படாத UPI பரிவர்த்தனை (₹ 1.82 கோடி) கண்டறியப்பட்டது. விஜி ஏஐ டோக்கனை உடனடியாக ரத்து செய்தது.",
+      te: "హెచ్చరిక: అనధికారిక UPI చెల్లింపుల ప్రయత్నం (₹ 1.82 కోట్లు) గుర్తించబడింది. విగిల్ ఏఐ టోకెన్‌ను రద్దు చేసి ఖాతాలను రక్షించింది.",
+      bn: "সতর্কতা: অননুমোদিত ইউপিআই পেমেন্ট প্রচেষ্টা (₹ ১.৮২ কোটি) ধরা পড়েছে। ভিজিল এআই সমস্ত অ্যাকাউন্ট সুরক্ষিত করেছে।",
+      kn: "ಎಚ್ಚರಿಕೆ: ಅನಧಿಕೃತ ಯುಪಿಐ ಪಾವತಿ ಪ್ರಯತ್ನ (₹ 1.82 ಕೋಟಿ) ಪತ್ತೆಯಾಗಿದೆ. ವಿಜಿಲ್ ಎಐ ಟೋಕನ್ ಅನ್ನು ತಕ್ಷಣವೇ ರದ್ದುಗೊಳಿಸಿದೆ.",
+      ml: "മുന്നറിയിപ്പ്: അനധികൃത യുപിഐ പേയ്‌മെന്റ് ശ്രമം (₹ 1.82 കോടി) കണ്ടെത്തി. വിഗിൽ എഐ ടോക്കൺ റദ്ദാക്കി.",
+      pa: "ਚੇਤਾਵਨੀ: ਅਣਅਧਿਕਾਰਤ ਯੂਪੀਆਈ ਭੁਗਤਾਨ (₹ 1.82 ਕਰੋੜ) ਦਾ ਪਤਾ ਲੱਗਾ ਹੈ। ਵਿਜਿਲ ਏਆਈ ਨੇ ਖਾਤੇ ਸੁਰੱਖਿਅਤ ਕਰ ਲਏ ਹਨ।",
+      od: "ଚେତାବନୀ: ଅନଧିକୃତ ୟୁପିଆଇ ପେମେଣ୍ଟ ଉଦ୍ୟମ (₹ 1.82 କୋଟି) ଧରାପଡ଼ିଛି। ଭିଜିଲ ଏଆଇ ଖାତାଗୁଡ଼ିକୁ ସୁରକ୍ଷିତ କରିଛି।"
     }
   },
   {
     incident_id: "INC-2026-0902-02",
-    title: "Distributed Botnet Credential Stuffing on NetBanking & IMPS Velocity Abuse",
+    title: "Distributed Botnet Credential Stuffing on NetBanking Portal & IMPS Velocity Abuse",
     severity: "HIGH",
     threat_tactic: "Credential Access / Brute Force",
     mitre_id: "T1110.004",
     direct_exposure_inr: 4250000.00,
     is_material: true,
     rbi_status: "MANDATORY_6_HOUR_FILING",
-    current_step: 3,
-    compromised_user: "corporate_salary_admin",
-    attacker_ip: "203.0.113.89",
+    current_step: 6,
+    compromised_user: "multiple_corporate_users",
+    attacker_ip: "45.33.32.156",
+    attacker_ips: [
+      "45.33.32.156 (Botnet Master Controller - Chicago, US)",
+      "185.220.101.45 (Tor Anonymizer - Zurich, CH)",
+      "103.251.167.88 (Proxy Pool - Tokyo, JP)",
+      "194.26.29.50 (Bot Node - Bucharest, RO)"
+    ],
+    target_assets: [
+      "10.14.1.50 (netbanking.bank.co.in)",
+      "10.14.1.80 (auth-otp-service.bank.internal)"
+    ],
+    compromised_credentials: "28 Corporate NetBanking Credentials & Automated IMPS Beneficiaries",
+    payload_hash: "SHA256: 7d12f38a9bc04e52811a0dc6721ef582098dca124317a102bcde190a87612f01",
+    payment_channel: "NetBanking Web Portal & High-Velocity IMPS Queue",
     batch_id: "IMPS-BURST-9912",
-    impact_summary: "Distributed IP botnet executing credential stuffing against NetBanking portal targeting corporate payout accounts.",
-    affected_systems: ["NetBanking Web Ingress", "IMPS Immediate Payment Switch", "IAM Multi-Factor Engine"],
+    impact_summary: "Tor exit nodes executed 4,200 req/min credential stuffing against NetBanking login endpoint, compromising 28 salary accounts and attempting rapid IMPS transfers.",
+    affected_systems: ["netbanking.bank.co.in", "auth-otp-service.bank.internal"],
     step1: {
-      rbi_ref: "RBI/2022-23/Master-Direction-Information-Security-Controls-Sec-5.1",
-      certin_category: "CIAD-2022-01 Credential Access & Automated Botnet Attacks",
-      threshold_desc: "Over 500 failed logins in 3 minutes followed by unauthorized outbound high-value IMPS transfers.",
-      clock_status: "Clock Running: 5h 52m remaining to submit Annexure-1",
-      penalty_at_stake: "₹ 50,00,000 (Regulatory Non-Compliance)",
-      reasoning_bullet: "Distributed brute-force pattern across 45 IP addresses targeting high-balance corporate payroll credentials."
+      rbi_ref: "RBI Master Direction on Digital Payment Security Controls (Section 4.3)",
+      certin_category: "CIAD-2022-08 Identity Theft, Spoofing & Automated Credential Stuffing",
+      threshold_desc: "Distributed botnet attack triggering anomalous credential failures across >25 corporate accounts.",
+      clock_status: "6-Hour Statutory SLA Active (Filing Completed in 3.8 mins)",
+      penalty_at_stake: "₹ 25,00,000 + Supervisory Action",
+      reasoning_bullet: "High velocity geo-distributed login attempts with brute-force password replay."
     },
     step2: {
-      autonomous_detection_title: "Stage 1: Autonomous Threat Hunting (Velocity Anomaly)",
-      autonomous_detection_query: "FROM logs-auth-*\n| WHERE event.category == \"authentication\" AND event.outcome == \"failure\"\n| STATS fail_count = count() BY source.ip, user.name\n| WHERE fail_count > 10\n| SORT fail_count DESC",
-      autonomous_detection_explanation: "Detects distributed brute force clusters exceeding baseline threshold.",
-      forensic_blast_radius_title: "Stage 2: Outbound IMPS Correlated Transfers",
-      forensic_blast_radius_query: "FROM logs-banking-*\n| WHERE bank.channel == \"IMPS\" AND user.name == \"corporate_salary_admin\"\n| KEEP @timestamp, source.ip, bank.account_id, bank.amount_inr, bank.beneficiary_vpa\n| SORT @timestamp DESC",
-      discovered_entity: "203.0.113.89 (Botnet Proxy Head)",
-      compromised_id: "corporate_salary_admin (Corporate IAM Session)",
+      autonomous_detection_title: "ES|QL Query: Botnet Velocity & Geographic Anomaly Detection",
+      autonomous_detection_query: `FROM logs-auth-default
+| WHERE event.action == "user_login" AND event.outcome == "failure"
+| STATS count() as fail_count by source.ip, source.geo.country_name
+| WHERE fail_count > 500`,
+      autonomous_detection_explanation: "Identified coordinated credential stuffing from 4 primary foreign egress IP pools.",
+      forensic_blast_radius_title: "ES|QL Query: Compromised Corporate Account Identification",
+      forensic_blast_radius_query: `FROM logs-banking-default
+| WHERE bank.channel == "IMPS" AND bank.batch_id == "IMPS-BURST-9912"
+| STATS sum(bank.amount_inr) as total_exposed, count() by user.name`,
+      discovered_entity: "45.33.32.156 (Bot Controller)",
+      compromised_id: "28 Corporate Salary User Credentials",
       sample_table: {
-        columns: ["@timestamp", "user.name", "bank.channel", "bank.amount_inr", "event.outcome"],
+        columns: ["@timestamp", "source.ip", "geo.country", "fail_velocity", "target_endpoint"],
         rows: [
-          ["2026-09-02T19:30:11Z", "corporate_salary_admin", "IMPS", 1250000.00, "pending"],
-          ["2026-09-02T19:30:45Z", "corporate_salary_admin", "IMPS", 1500000.00, "pending"],
-          ["2026-09-02T19:31:02Z", "corporate_salary_admin", "IMPS", 1500000.00, "pending"]
+          ["2026-09-02T18:14:02Z", "45.33.32.156", "United States", "4,200 req/min", "/netbanking/login"],
+          ["2026-09-02T18:13:50Z", "185.220.101.45", "Switzerland", "1,850 req/min", "/netbanking/login"],
+          ["2026-09-02T18:13:22Z", "103.251.167.88", "Japan", "940 req/min", "/netbanking/login"]
         ]
       }
     },
     step3: {
-      corporate_count: 5,
-      hni_count: 2,
-      affected_accounts_total: 7,
-      account_examples: "Mahindra Heavy Corp, Godrej Logistics, HNI-Apex-102",
-      business_risk_level: "HIGH (₹ 42.5 Lakhs at Risk)",
-      penalty_saved: "₹ 50,00,000 Saved",
-      core_systems_affected: "NetBanking Web Farm & IMPS Switch",
+      corporate_count: 28,
+      hni_count: 0,
+      affected_accounts_total: 28,
+      account_examples: "Infosys Salary Batch #12, Wipro Vendor Accounts",
+      business_risk_level: "HIGH REPUTATIONAL & FUNDS RISK",
+      penalty_saved: "₹ 25,00,000 Saved via Timely Containment",
+      core_systems_affected: "NetBanking Web Tier, OTP SMS Dispatch Engine, IMPS Outbound Gateway",
       accounts_table: [
-        { account_id: "ACC-CORP-7719203", name: "Mahindra Heavy Precision Corp", tier: "Corporate", balance_inr: 12000000.00, exposed_inr: 2500000.00, status: "FROZEN_PRESERVED", branch: "Worli Corporate, Mumbai" },
-        { account_id: "ACC-CORP-6628194", name: "Godrej Logistics Eastern Hub", tier: "Corporate", balance_inr: 8900000.00, exposed_inr: 1750000.00, status: "FROZEN_PRESERVED", branch: "Park Street, Kolkata" }
+        { account_id: "ACC-7721890", name: "Anand Rathi Corporate Payroll", tier: "Corporate", balance_inr: 12500000.00, exposed_inr: 1800000.00, status: "FROZEN_PRESERVED", branch: "Pune Main (0040)" },
+        { account_id: "ACC-6612941", name: "Kirloskar Vendor Disbursal", tier: "Corporate", balance_inr: 9400000.00, exposed_inr: 1250000.00, status: "FROZEN_PRESERVED", branch: "Cyber City Gurugram (0015)" },
+        { account_id: "ACC-5529810", name: "Tech Mahindra Contractor Pool", tier: "Corporate", balance_inr: 8100000.00, exposed_inr: 1200000.00, status: "FROZEN_PRESERVED", branch: "Electronic City Bengaluru (0018)" }
       ]
     },
     step4: {
       actions: [
-        { title: "Enforce WAF Geo-IP & Threat Intel Block", system: "Cloudflare WAF", type: "Network", description: "Block ASN range originating botnet credential stuffing wave." },
-        { title: "Force Terminate Corporate IAM Sessions", system: "Active Directory / Okta", type: "IAM", description: "Kill active session tokens and enforce mandatory MFA step-up." },
-        { title: "Freeze Outbound IMPS Queue", system: "NPCI IMPS Switch", type: "Payment", description: "Hold batch IMPS-BURST-9912 awaiting SOC human clearance." }
+        { title: "Enforce Cloud WAF Geo-IP & Threat Intelligence Filter", description: "Blocked ASN ranges for Tor relays and anonymized residential proxy networks at Cloud WAF layer.", system: "Cloudflare WAF / AWS WAF", api_payload: { action: "BLOCK_ASN_POOL", asns: [13335, 9009] } },
+        { title: "Terminate Active User Sessions & Force OTP Reset", description: "Revoked active web session cookies and locked accounts pending mandatory biometric re-auth.", system: "Customer IAM (ciam-prod)", api_payload: { action: "FORCE_CREDENTIAL_ROTATION", accounts: 28 } },
+        { title: "Suspend High-Velocity IMPS Beneficiary Injections", description: "Temporarily blocked newly added IMPS payees with cooling-off period enforcement.", system: "IMPS Engine (imps-fast-switch)", api_payload: { action: "ENFORCE_COOLING_PERIOD", duration: "24h" } }
       ],
-      containment_success_msg: "Botnet ingress blocked, IAM credentials rotated, and ₹42.5L IMPS transfers preserved."
+      containment_success_msg: "Botnet traffic mitigated at perimeter. 28 customer accounts secured with mandatory OTP rotation."
     },
     step5: {
-      certin_title: "CYBER SECURITY INCIDENT REPORTING FORM - ANNEXURE 1",
-      affected_systems: "NetBanking Web Farm & IMPS Gateway",
-      remedial_summary: "Distributed botnet IPs blocked, force password rotation applied on impacted corporate admins."
+      affected_systems: "netbanking.bank.co.in (10.14.1.50), auth-otp-service (10.14.1.80)",
+      remedial_summary: "WAF IP block enforced; 28 accounts force-reset; IMPS cooling-off period activated."
     },
     step6: {
-      sha256_hash: "0x3f9a8b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a",
-      merkle_root: "0x1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b",
-      block_id: 106
+      block_hash: "0x1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b",
+      prev_hash: "0x8f9c1e4d8a7b6c5e3f2a1d0b9c8e7f6a5b4c3d2e1f0a9b8c7d6e5f4a3b2c1d0",
+      merkle_root: "0xaabbccddeeff00112233445566778899aabbccddeeff00112233445566778899"
     },
     topology: [
-      { id: "node-1", label: "Distributed Botnet Nodes", type: "ATTACKER", ip: "203.0.113.89", geo: "Multi-Region Proxy", status: "BLOCKED", protocol: "HTTP / REST", mitre_tag: "T1110.004 Credential Stuffing", details: "Rotating user agents testing leaked credential dictionaries." },
-      { id: "node-2", label: "NetBanking Reverse Proxy", type: "GATEWAY", ip: "10.0.3.15", geo: "AWS Mumbai", status: "ACTIVE", protocol: "HTTPS", mitre_tag: "T1190 Ingress Vulnerability", details: "Rate-limiting threshold breached." },
-      { id: "node-3", label: "IMPS Outbound Gateway", type: "TARGET", ip: "10.0.9.11", geo: "Mumbai DC", status: "ISOLATED", protocol: "ISO 8583", mitre_tag: "T1565.001 Account Tampering", details: "Held in escrow pending SOC verification." }
+      { id: "node-bot1", label: "Botnet Node 1 (US)", type: "ATTACKER", ip: "45.33.32.156", geo: "Chicago, US", status: "BLOCKED", protocol: "HTTPS", mitre_tag: "T1110.004", details: "Distributed credential stuffing node launching rapid POST payloads." },
+      { id: "node-bot2", label: "Tor Exit Node (CH)", type: "ATTACKER", ip: "185.220.101.45", geo: "Zurich, CH", status: "BLOCKED", protocol: "HTTPS", mitre_tag: "T1110.004", details: "Anonymized egress proxy attempting automated OTP bypass." },
+      { id: "node-netbk", label: "NetBanking Web (DMZ)", type: "GATEWAY", ip: "10.14.1.50", geo: "Mumbai DC Tier-IV", status: "ISOLATED", protocol: "TLS 1.3", mitre_tag: "T1078", details: "Customer online banking portal receiving burst login traffic." },
+      { id: "node-imps", label: "IMPS Switch Core", type: "TARGET", ip: "10.14.1.80", geo: "Navi Mumbai DC", status: "FROZEN", protocol: "ISO 8583", mitre_tag: "T1565", details: "Real-time payment switch targeted for immediate fund drain." }
     ],
     timeline: [
-      { offset: "+00:00", time: "19:28:10 UTC", title: "Botnet Credential Burst Started", tactic: "Initial Access", source_ip: "203.0.113.89", description: "520 login attempts in 180 seconds across 40 corporate accounts.", severity: "HIGH", raw_ecs: { "@timestamp": "2026-09-02T19:28:10Z", "event.category": "authentication", "event.outcome": "failure" } },
-      { offset: "+00:02", time: "19:30:11 UTC", title: "Successful Login on Admin Account", tactic: "Privilege Escalation", source_ip: "203.0.113.89", description: "Attacker authenticated into corporate_salary_admin account.", severity: "CRITICAL", raw_ecs: { "@timestamp": "2026-09-02T19:30:11Z", "user.name": "corporate_salary_admin", "event.outcome": "success" } },
-      { offset: "+00:04", time: "19:32:00 UTC", title: "Vigil Botnet Quarantine Applied", tactic: "Remediation", source_ip: "10.0.3.15", description: "Vigil automated rule blocked botnet IPs and quarantined IMPS queue.", severity: "INFO", raw_ecs: { "@timestamp": "2026-09-02T19:32:00Z", "action": "BLOCK_BOTNET" } }
+      { offset: "+00:00", time: "18:10:00 UTC", title: "Botnet Login Burst Detected", tactic: "Credential Access", source_ip: "45.33.32.156", description: "Sudden spike of 4,200 failed logins across 800 IP addresses in 2 minutes.", severity: "CRITICAL", raw_ecs: { "@timestamp": "2026-09-02T18:10:00Z", "event.category": "authentication", "event.outcome": "failure" } },
+      { offset: "+00:02", time: "18:12:15 UTC", title: "Corporate Account Compromise", tactic: "Initial Access", source_ip: "185.220.101.45", description: "28 corporate salary accounts successfully accessed via reused credentials.", severity: "HIGH", raw_ecs: { "@timestamp": "2026-09-02T18:12:15Z", "event.category": "authentication", "event.outcome": "success" } },
+      { offset: "+00:03", time: "18:13:50 UTC", title: "Rapid IMPS Beneficiary Addition", tactic: "Exfiltration", source_ip: "103.251.167.88", description: "Automated scripts attempting to inject rogue IMPS payees for quick drain.", severity: "CRITICAL", raw_ecs: { "@timestamp": "2026-09-02T18:13:50Z", "bank.channel": "IMPS", "bank.amount_inr": 4250000.0 } },
+      { offset: "+00:04", time: "18:14:02 UTC", title: "VIGIL Autonomous Mitigation", tactic: "Defense Response", source_ip: "10.0.1.1", description: "WAF rate limit applied; 28 accounts locked; IMPS cooldown enforced.", severity: "INFO", raw_ecs: { "@timestamp": "2026-09-02T18:14:02Z", "event.action": "MITIGATION_SUCCESS" } }
     ],
     copilot_prompts: [
-      { question: "List top IPs generating failed logins in last 1 hour", esql_query: "FROM logs-auth-*\n| WHERE event.outcome == \"failure\"\n| STATS fails = count() BY source.ip\n| SORT fails DESC\n| LIMIT 10", explanation: "Shows external IPs actively brute forcing credentials." }
+      { question: "Find source IPs generating more than 100 failed logins in the last 15 minutes", esql_query: `FROM logs-auth-default | WHERE event.outcome == "failure" | STATS count() as failures by source.ip | WHERE failures > 100 | SORT failures DESC`, explanation: "Surfaces botnet IP nodes participating in distributed credential stuffing." },
+      { question: "List all IMPS beneficiaries added within 5 minutes of a successful login", esql_query: `FROM logs-banking-default | WHERE bank.channel == "IMPS" AND bank.action == "ADD_BENEFICIARY" | LIMIT 25`, explanation: "Flags high-velocity automated payee injections indicative of account takeover." }
     ],
-    terminal: {
-      default_query: "FROM logs-auth-*\n| WHERE event.outcome == \"failure\"\n| STATS fail_count = count() BY source.ip, user.name\n| WHERE fail_count >= 5\n| SORT fail_count DESC\n| LIMIT 10",
-      preset1_label: "⚡ Failed Login Heatmap",
-      preset1_query: "FROM logs-auth-*\n| WHERE event.outcome == \"failure\"\n| STATS fail_count = count() BY source.ip",
-      preset2_label: "🎯 Targeted Accounts",
-      preset2_query: "FROM logs-auth-*\n| STATS success_rate = count() BY user.name\n| LIMIT 10"
-    },
     indic: {
-      hi: "सुरक्षा सूचना: नेटबैंकिंग पोर्टल पर बॉटनेट क्रेडेंशियल स्टफिंग का प्रयास पकड़ा गया। कॉर्पोरेट सैलरी एडमिन अकाउंट को सुरक्षित कर दिया गया है।\n\n📌 शाखा कार्रवाई: ₹ 42.5 लाख के आईएमपीएस ट्रांसफर रोक दिए गए हैं।",
-      mr: "सुरक्षा सूचना: नेटबँकिंग पोर्टलवर बॉटनेटकडून मोठा हल्ला झाला आहे. सर्व संशयित खाती तात्काळ सुरक्षित करण्यात आली आहेत.\n\n📌 शाखा कृती: ₹ 42.5 लाखांचे व्यवहार रोखण्यात आले आहेत.",
-      ta: "பாதுகாப்பு தகவல்: நெட்பேங்கிங் தளத்தில் பாட்நெட் தாக்குதல் தடுக்கப்பட்டது. கார்ப்பரேட் கணக்குகள் பாதுகாக்கப்பட்டுள்ளன.\n\n📌 கிளை நடவடிக்கை: ₹ 42.5 லட்சம் பரிவர்த்தனை நிறுத்தி வைக்கப்பட்டது.",
-      te: "భద్రతా సమాచారం: నెట్‌బ్యాంకింగ్ పోర్టల్‌పై బాట్‌నెట్ దాడి విఫలం చేయబడింది.\n\n📌 బ్రాంచ్ చర్య: ₹ 42.5 లక్షల బదిలీలు నిలిపివేయబడ్డాయి.",
-      bn: "নিরাপত্তা তথ্য: নেটব্যাঙ্কিং পোর্টালে বটনেট আক্রমণ প্রতিহত করা হয়েছে।\n\n📌 শাখা পদক্ষেপ: ₹ 42.5 লক্ষ টাকার ট্রান্সফার আটকানো হয়েছে।"
-    },
-    escalation: {
-      slack_channel: "#soc-tier1-botnet-alerts",
-      pagerduty_urgency: "P2 (HIGH PRIORITY)",
-      jira_summary: "[HIGH] Distributed Credential Stuffing & IMPS Velocity Abuse - Ref INC-2026-0902-02"
+      hi: "चेतावनी: नेटबैंकिंग पोर्टल पर बॉटनेट पासवर्ड अटैक पकड़ा गया। 28 कॉर्पोरेट खातों को तुरंत लॉक कर दिया गया है और अनधिकृत निकासी रोक दी गई है।",
+      mr: "सावधान: नेटबँकिंग पोर्टलवर बॉटनेट हल्ला शोधला गेला आहे. २८ खाती त्वरित सुरक्षित करण्यात आली आहेत.",
+      gu: "ચેતવણી: નેટબેંકિંગ પર બોટનેટ એટેક પકડાયો છે. ૨૮ કોર્પોરેટ ખાતાઓ તુરંત સુરક્ષિત કરવામાં આવ્યા છે.",
+      ta: "எச்சரிக்கை: நெட்பேங்கிங் தளத்தில் பாட்நெட் தாக்குதல் கண்டுபிடிக்கப்பட்டது. 28 கணக்குகள் பாதுகாக்கப்பட்டன.",
+      te: "హెచ్చరిక: నెట్‌బ్యాంకింగ్‌పై బోట్‌నెట్ దాడి గుర్తించబడింది. 28 ఖాతాలు తక్షణమే రక్షించబడ్డాయి.",
+      bn: "সতর্কতা: নেটব্যাঙ্কিং পোর্টালে বটনেট আক্রমণ শনাক্ত করা হয়েছে। ২৮টি অ্যাকাউন্ট সুরক্ষিত করা হয়েছে।",
+      kn: "ಎಚ್ಚರಿಕೆ: ನೆಟ್‌ಬ್ಯಾಂಕಿಂಗ್‌ನಲ್ಲಿ ಬಾಟ್‌ನೆಟ್ ದಾಳಿ ಪತ್ತೆಯಾಗಿದೆ. 28 ಖಾತೆಗಳನ್ನು ಸುರಕ್ಷಿತಗೊಳಿಸಲಾಗಿದೆ.",
+      ml: "മുന്നറിയിപ്പ്: നെറ്റ്ബാങ്കിംഗിൽ ബോട്ട്നെറ്റ് ആക്രമണം കണ്ടെത്തി. 28 അക്കൗണ്ടുകൾ സുരക്ഷിതമാക്കി.",
+      pa: "ਚੇਤਾਵਨੀ: ਨੈੱਟਬੈਂਕਿੰਗ 'ਤੇ ਬੋਟਨੈੱਟ ਹਮਲਾ ਫੜਿਆ ਗਿਆ। 28 ਖਾਤੇ ਸੁਰੱਖਿਅਤ ਕਰ ਲਏ ਗਏ ਹਨ।",
+      od: "ଚେତାବନୀ: ନେଟବ୍ୟାଙ୍କିଙ୍ଗରେ ବଟନେଟ ଆକ୍ରମଣ ଧରାପଡ଼ିଛି। ୨୮ଟି ଖାତା ସୁରକ୍ଷିତ କରାଯାଇଛି।"
     }
   },
   {
     incident_id: "INC-2026-0902-03",
-    title: "ATM Switch-In-The-Middle ISO 8583 Response Code Tampering",
+    title: "ATM Switch-In-The-Middle ISO 8583 Response Code Manipulation",
     severity: "CRITICAL",
-    threat_tactic: "Man-in-the-Middle / Data Tampering",
+    threat_tactic: "Man-in-the-Middle / Data Manipulation",
     mitre_id: "T1557",
     direct_exposure_inr: 34000000.00,
     is_material: true,
     rbi_status: "MANDATORY_6_HOUR_FILING",
-    current_step: 4,
+    current_step: 6,
     compromised_user: "switch_daemon_vlan8",
-    attacker_ip: "10.14.88.22",
+    attacker_ip: "10.14.22.88",
+    attacker_ips: [
+      "10.14.22.88 (Rogue Switch Tap - Mumbai Regional ATM LAN)",
+      "198.51.100.77 (Encrypted C2 Relay - Stockholm, SE)",
+      "10.14.22.105 (Infected Branch Terminal 3)"
+    ],
+    target_assets: [
+      "10.14.22.1 (atm-switch-core.bank.internal)",
+      "10.14.22.50 (hsm-cluster.bank.internal)"
+    ],
+    compromised_credentials: "ATM Switch Channel Session #8812 & ISO 8583 Response Code Modifier",
+    payload_hash: "SHA256: 3c90f2b84e117a02c918a0021cd58e663a82910d8819a12c8b0124fe7891bc04",
+    payment_channel: "ATM Switch ISO 8583 Authorization Protocol",
     batch_id: "ATM-SWITCH-CLUSTER-04",
-    impact_summary: "Rogue network tap on internal ATM switch altering ISO 8583 response codes from '51' (Insufficient Funds) to '00' (Approved).",
-    affected_systems: ["ATM Switch Controller", "Hardware Security Module (HSM)", "Core Debit Engine"],
+    impact_summary: "Adversary executed ARP poisoning on regional ATM switch router, intercepting ISO 8583 packet streams and forging response code '00' (Approved) for depleted cards.",
+    affected_systems: ["atm-switch-core.bank.internal", "hsm-cluster.bank.internal"],
     step1: {
-      rbi_ref: "RBI/2020-21/Cyber-Security-Framework-for-Banks-Appendix-G",
-      certin_category: "CIAD-2022-03 Man-in-the-Middle & Core Protocol Tampering",
-      threshold_desc: "Core banking protocol compromise directly impacting ATM cash dispense authorization.",
-      clock_status: "Clock Running: 5h 44m remaining to submit Annexure-1",
-      penalty_at_stake: "₹ 1,00,00,000 (Critical Infrastructure Violation)",
-      reasoning_bullet: "Altering authorization messages from decline to approve enables unlimited off-us cash dispensing."
+      rbi_ref: "RBI Circular on ATM Security Controls (DBS.CO.CSITE.BC.11/31.01.015/2019-20)",
+      certin_category: "CIAD-2022-02 Compromise of Critical Infrastructure & ATM Switching Protocol",
+      threshold_desc: "Direct protocol-level manipulation of core ATM switch exceeding ₹3.40 Crore exposure.",
+      clock_status: "6-Hour Statutory SLA Active (Filing Completed in 4.5 mins)",
+      penalty_at_stake: "₹ 1,00,00,000 + ATM Fleet Suspension",
+      reasoning_bullet: "ISO 8583 message modification tampering with authorization response codes."
     },
     step2: {
-      autonomous_detection_title: "Stage 1: Autonomous Threat Hunting (ATM Protocol Drift)",
-      autonomous_detection_query: "FROM logs-banking-*\n| WHERE bank.channel == \"ATM_SWITCH\" AND bank.amount_inr > 20000.00\n| STATS total_dispensed = sum(bank.amount_inr), tx_count = count() BY source.ip, bank.batch_id\n| WHERE total_dispensed > 5000000.00",
-      autonomous_detection_explanation: "Detects unauthorized aggregate cash dispense spikes bypassing core balances.",
-      forensic_blast_radius_title: "Stage 2: ATM Terminal Blast Radius",
-      forensic_blast_radius_query: "FROM logs-banking-*\n| WHERE source.ip == \"10.14.88.22\"\n| KEEP @timestamp, bank.account_id, bank.amount_inr, bank.batch_id\n| LIMIT 10",
-      discovered_entity: "10.14.88.22 (Internal Rogue Switch Tap)",
-      compromised_id: "switch_daemon_vlan8 (ATM Authorization Daemon)",
+      autonomous_detection_title: "ES|QL Query: ISO 8583 Response Code Mismatch Anomaly",
+      autonomous_detection_query: `FROM logs-banking-default
+| WHERE bank.channel == "ATM" AND bank.iso8583_resp_code == "00" AND bank.core_ledger_status == "INSUFFICIENT_FUNDS"
+| STATS count() as tampered_txns, sum(bank.amount_inr) as exposure by bank.atm_id`,
+      autonomous_detection_explanation: "Detected discrepancies where ATM switch reported approval but core ledger had declined due to zero balance.",
+      forensic_blast_radius_title: "ES|QL Query: Rogue Switch Tap & ARP Poisoning Signature",
+      forensic_blast_radius_query: `FROM logs-network-default
+| WHERE network.protocol == "arp" AND event.action == "duplicate_ip_advertisement"
+| STATS count() by source.ip, source.mac`,
+      discovered_entity: "10.14.22.88 (Rogue ATM Tap)",
+      compromised_id: "ISO 8583 Bit 39 Override Module",
       sample_table: {
-        columns: ["@timestamp", "bank.batch_id", "bank.amount_inr", "bank.channel"],
+        columns: ["@timestamp", "atm.id", "card.last4", "switch.resp", "cbs.status", "amount.inr"],
         rows: [
-          ["2026-09-02T19:40:02Z", "ATM-SWITCH-CLUSTER-04", 1000000.00, "ATM_SWITCH"],
-          ["2026-09-02T19:40:22Z", "ATM-SWITCH-CLUSTER-04", 1000000.00, "ATM_SWITCH"],
-          ["2026-09-02T19:40:45Z", "ATM-SWITCH-CLUSTER-04", 1000000.00, "ATM_SWITCH"]
+          ["2026-09-02T19:02:11Z", "ATM-MUM-0412", "9912", "00 (APPROVED)", "DECLINED (05)", "50,000.00"],
+          ["2026-09-02T19:02:45Z", "ATM-MUM-0412", "9912", "00 (APPROVED)", "DECLINED (05)", "50,000.00"],
+          ["2026-09-02T19:03:10Z", "ATM-MUM-0418", "4410", "00 (APPROVED)", "DECLINED (05)", "50,000.00"]
         ]
       }
     },
@@ -451,65 +477,57 @@ const SCENARIOS_DATA: ScenarioConfig[] = [
       corporate_count: 0,
       hni_count: 12,
       affected_accounts_total: 12,
-      account_examples: "ATM Regional Cluster 04 (Delhi NCR, Bengaluru, Mumbai)",
-      business_risk_level: "CRITICAL (₹ 3.40 Crore Potential Cash Dispense)",
-      penalty_saved: "₹ 1,00,00,000 Regulatory Penalty Averted",
-      core_systems_affected: "ATM Switch Cluster #4 & HSM Zone",
+      account_examples: "12 High-Limit Debit Cards Cloned for ATM Cashout",
+      business_risk_level: "CRITICAL DIRECT CASH DISBURSEMENT RISK",
+      penalty_saved: "₹ 1,00,00,000 Saved via Timely Containment",
+      core_systems_affected: "ATM Base24-eps Switch, Hardware Security Module (HSM), Regional Cash Clearing",
       accounts_table: [
-        { account_id: "ACC-ATM-990182", name: "ATM Terminal Cluster 04-North", tier: "HNI", balance_inr: 50000000.00, exposed_inr: 12000000.00, status: "FROZEN_PRESERVED", branch: "Regional ATM Switch, Delhi" },
-        { account_id: "ACC-ATM-441209", name: "ATM Terminal Cluster 04-West", tier: "HNI", balance_inr: 45000000.00, exposed_inr: 11000000.00, status: "FROZEN_PRESERVED", branch: "Regional ATM Switch, Mumbai" },
-        { account_id: "ACC-ATM-330199", name: "ATM Terminal Cluster 04-South", tier: "HNI", balance_inr: 38000000.00, exposed_inr: 11000000.00, status: "FROZEN_PRESERVED", branch: "Regional ATM Switch, Bengaluru" }
+        { account_id: "ACC-4410921", name: "Capt. Arvind Malhotra (Retd)", tier: "HNI", balance_inr: 45000.00, exposed_inr: 2800000.00, status: "FROZEN_PRESERVED", branch: "Colaba Mumbai (0002)" },
+        { account_id: "ACC-8821094", name: "Sunita Deshmukh Wealth Card", tier: "HNI", balance_inr: 12000.00, exposed_inr: 3100000.00, status: "FROZEN_PRESERVED", branch: "Vashi Navi Mumbai (0022)" }
       ]
     },
     step4: {
       actions: [
-        { title: "Isolate Switch Interface 10.14.88.22", system: "Cisco Core Switch VLAN 8", type: "Network", description: "Quarantine rogue tap port to sinkhole VLAN." },
-        { title: "Rotate HSM MAC Keys", system: "Thales HSM Enclave", type: "Crypto", description: "Force instant key rotation for ISO 8583 message authentication codes." },
-        { title: "Force Synchronous Host Ledger Verification", system: "Core Banking Engine", type: "Core Banking", description: "Disable stand-in processing (STIP) mode across all ATM controllers." }
+        { title: "Quarantine Rogue Switch Tap into Sinkhole VLAN", description: "Isolated port GigabitEthernet1/0/24 on core switch to terminate ARP spoofing.", system: "Cisco Catalyst Core Switch", api_payload: { action: "PORT_SHUTDOWN", port: "Gi1/0/24" } },
+        { title: "Force Synchronous Core Ledger Validation for All ATMs", description: "Disabled Stand-In Processing (STIP) mode; required 100% real-time CBS authorization.", system: "Base24 ATM Controller", api_payload: { action: "DISABLE_STIP_MODE", region: "WEST_MUMBAI" } },
+        { title: "Rotate HSM Zone Master Encryption Keys (ZMK)", description: "Generated new cryptoperiod keys on Thales PayShield 10K HSM cluster.", system: "Thales HSM Cluster", api_payload: { action: "ROTATE_ZMK", cluster_id: "HSM-MUM-01" } }
       ],
-      containment_success_msg: "ATM switch port quarantined, HSM keys rotated, and stand-in authorization halted."
+      containment_success_msg: "ATM switch tap quarantined. Synchronous core ledger validation enforced. Zero cashout loss."
     },
     step5: {
-      certin_title: "CYBER SECURITY INCIDENT REPORTING FORM - ANNEXURE 1",
-      affected_systems: "ATM Switch Controller & ISO 8583 Parser",
-      remedial_summary: "Rogue tap quarantined, HSM zone rotated, stand-in offline mode disabled."
+      affected_systems: "atm-switch-core.bank.internal (10.14.22.1), hsm-cluster (10.14.22.50)",
+      remedial_summary: "Rogue tap isolated; STIP mode disabled; HSM keys rotated; ATM fleet secured."
     },
     step6: {
-      sha256_hash: "0x8e5a77192834bba9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3",
-      merkle_root: "0x4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c",
-      block_id: 107
+      block_hash: "0x3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d",
+      prev_hash: "0x1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b",
+      merkle_root: "0xccddeeff00112233445566778899aabbccddeeff00112233445566778899aabb"
     },
     topology: [
-      { id: "node-1", label: "Internal Switch Tap", type: "ATTACKER", ip: "10.14.88.22", geo: "Internal DC Tap", status: "ISOLATED", protocol: "ISO 8583 Raw TCP", mitre_tag: "T1557 MITM Tampering", details: "Forging response packets on VLAN 8." },
-      { id: "node-2", label: "ATM Switch Hub", type: "CORE_SYSTEM", ip: "10.0.12.1", geo: "Mumbai DC", status: "ACTIVE", protocol: "ISO 8583", mitre_tag: "T1565 Data Manipulation", details: "Switch controller for 1,200 ATMs." },
-      { id: "node-3", label: "Thales HSM Zone", type: "TARGET", ip: "10.0.14.5", geo: "Secure Cryptographic Vault", status: "FROZEN", protocol: "PKCS#11", mitre_tag: "T1552 Unsecured Keys", details: "MAC verification rotated." }
+      { id: "node-atm1", label: "Regional ATM Fleet", type: "GATEWAY", ip: "10.14.22.100", geo: "Mumbai Region", status: "ACTIVE", protocol: "ISO 8583", mitre_tag: "T1557", details: "Physical ATM terminals connected to regional switch concentrator." },
+      { id: "node-tap", label: "Rogue Switch Tap", type: "ATTACKER", ip: "10.14.22.88", geo: "Local LAN Tap", status: "BLOCKED", protocol: "ARP/Raw Ethernet", mitre_tag: "T1557", details: "Unauthorized hardware appliance executing packet interception." },
+      { id: "node-atmsw", label: "ATM Switch Core", type: "CORE_SYSTEM", ip: "10.14.22.1", geo: "Mumbai Core DC", status: "ISOLATED", protocol: "TCP/IP", mitre_tag: "T1565.001", details: "Transaction processing engine converting ATM requests to CBS format." },
+      { id: "node-cbsatm", label: "Finacle CBS", type: "TARGET", ip: "10.0.8.50", geo: "Mumbai Core DC", status: "ACTIVE", protocol: "JSON RPC", mitre_tag: "T1565", details: "Core accounting ledger maintaining customer account balances." }
     ],
     timeline: [
-      { offset: "+00:00", time: "19:38:00 UTC", title: "Rogue ARP Poisoning on Switch VLAN", tactic: "Lateral Movement", source_ip: "10.14.88.22", description: "Internal rogue device intercepted ATM switch traffic.", severity: "CRITICAL", raw_ecs: { "@timestamp": "2026-09-02T19:38:00Z", "network.protocol": "arp", "source.ip": "10.14.88.22" } },
-      { offset: "+00:02", time: "19:40:02 UTC", title: "ISO 8583 Response Code 00 Forgery", tactic: "Impact", source_ip: "10.14.88.22", description: "Declined transactions altered to Approved in transit.", severity: "CRITICAL", raw_ecs: { "@timestamp": "2026-09-02T19:40:02Z", "bank.amount_inr": 1000000.0, "bank.channel": "ATM_SWITCH" } },
-      { offset: "+00:04", time: "19:42:15 UTC", title: "Vigil Instant Switch Quarantine", tactic: "Remediation", source_ip: "10.0.12.1", description: "Vigil automated protocol validator dropped rogue tap and enforced synchronous host mode.", severity: "INFO", raw_ecs: { "@timestamp": "2026-09-02T19:42:15Z", "action": "SINKHOLE_VLAN" } }
+      { offset: "+00:00", time: "19:00:10 UTC", title: "ARP Poisoning Injected on ATM VLAN", tactic: "Credential Access", source_ip: "10.14.22.88", description: "Rogue device began spoofing default gateway MAC address on VLAN 22.", severity: "CRITICAL", raw_ecs: { "@timestamp": "2026-09-02T19:00:10Z", "event.category": "network" } },
+      { offset: "+00:02", time: "19:02:11 UTC", title: "ISO 8583 Response Code Tampering", tactic: "Data Manipulation", source_ip: "10.14.22.88", description: "Declined responses (05) altered to Approved (00) before reaching ATM.", severity: "CRITICAL", raw_ecs: { "@timestamp": "2026-09-02T19:02:11Z", "bank.amount_inr": 34000000.0 } },
+      { offset: "+00:03", time: "19:03:30 UTC", title: "VIGIL Core Discrepancy Alert", tactic: "Defense Response", source_ip: "10.0.1.1", description: "ES|QL engine flagged zero-balance cashout anomaly and severed rogue port.", severity: "INFO", raw_ecs: { "@timestamp": "2026-09-02T19:03:30Z", "event.action": "PORT_SHUTDOWN" } }
     ],
     copilot_prompts: [
-      { question: "Audit all ATM switch transactions exceeding ₹50,000", esql_query: "FROM logs-banking-*\n| WHERE bank.channel == \"ATM_SWITCH\" AND bank.amount_inr > 50000.00\n| STATS total_dispensed = sum(bank.amount_inr) BY source.ip, bank.batch_id\n| SORT total_dispensed DESC", explanation: "Identifies anomalies in ATM cash dispensing." }
+      { question: "Find all ATM transactions where switch response was 00 but CBS status was DECLINED", esql_query: `FROM logs-banking-default | WHERE bank.channel == "ATM" AND bank.iso8583_resp_code == "00" AND bank.core_status == "DECLINED" | LIMIT 50`, explanation: "Pinpoints exact MITM packet tampering events across ATM network." }
     ],
-    terminal: {
-      default_query: "FROM logs-banking-*\n| WHERE bank.channel == \"ATM_SWITCH\"\n| STATS total_cash = sum(bank.amount_inr), count = count() BY bank.batch_id\n| SORT total_cash DESC\n| LIMIT 10",
-      preset1_label: "⚡ ATM Cash Anomaly",
-      preset1_query: "FROM logs-banking-*\n| WHERE bank.channel == \"ATM_SWITCH\" AND bank.amount_inr > 20000.00\n| STATS sum(bank.amount_inr) BY source.ip",
-      preset2_label: "🎯 Terminal Drift",
-      preset2_query: "FROM logs-banking-*\n| WHERE bank.channel == \"ATM_SWITCH\"\n| KEEP @timestamp, source.ip, bank.amount_inr"
-    },
     indic: {
-      hi: "सुरक्षा सूचना: एटीएम स्विच नेटवर्क पर एमआईटीएम (MITM) हमले का पता चला है। फर्जी अप्रूवल कोड तुरंत रद्द कर दिए गए हैं।\n\n📌 शाखा कार्रवाई: ₹ 3.40 करोड़ की अनधिकृत निकासी रोक दी गई है और एटीएम स्विच को सुरक्षित कर दिया गया है।",
-      mr: "सुरक्षा सूचना: एटीएम स्विच नेटवर्कवरील बनावट व्यवहार तात्काळ रोखण्यात आले आहेत.\n\n📌 शाखा कृती: ₹ 3.40 कोटींचे नुकसान टाळले गेले आहे.",
-      ta: "பாதுகாப்பு எச்சரிக்கை: ஏடிஎம் சுவிட்ச் நெட்வொர்க் முறைகேடு கண்டறியப்பட்டு தடுக்கப்பட்டது.\n\n📌 கிளை நடவடிக்கை: ₹ 3.40 கோடி பணப் பாதுகாப்பு உறுதி செய்யப்பட்டது.",
-      te: "భద్రతా సమాచారం: ఏటీఎం స్విచ్ నెట్‌వర్క్‌లో మోసపూరిత లావాదేవీలు నిలిపివేయబడ్డాయి.\n\n📌 బ్రాంచ్ చర్య: ₹ 3.40 కోట్ల నష్టం నివారించబడింది.",
-      bn: "নিরাপত্তা তথ্য: এটিএম সুইচ নেটওয়ার্কে জালিয়াতি প্রতিহত করা হয়েছে।\n\n📌 শাখা পদক্ষেপ: ₹ 3.40 কোটি টাকা সুরক্ষিত রাখা হয়েছে।"
-    },
-    escalation: {
-      slack_channel: "#soc-tier1-switch-alerts",
-      pagerduty_urgency: "P1 (CRITICAL INCIDENT)",
-      jira_summary: "[CRITICAL] ATM Switch ISO 8583 Response Code Tampering - Ref INC-2026-0902-03"
+      hi: "चेतावनी: एटीएम स्विच में डेटा छेड़छाड़ (₹ 3.40 करोड़) पकड़ी गई। अवैध हार्डवेयर टैप को तुरंत ब्लॉक कर दिया गया है।",
+      mr: "सावधान: एटीएम स्विचमधील छेडछाड (₹ 3.40 कोटी) शोधली गेली. संशयास्पद कनेक्शन त्वरित बंद केले आहे.",
+      gu: "ચેતવણી: એટીએમ સ્વિચમાં ડેટા ચેડાં (₹ 3.40 કરોડ) પકડાયા છે. શંકાસ્પદ પોર્ટ તાત્કાલિક બ્લોક કરવામાં આવ્યો છે.",
+      ta: "எச்சரிக்கை: ஏடிஎம் சுவிட்ச் சேதப்படுத்துதல் கண்டறியப்பட்டது. போர்ட் உடனடியாக துண்டிக்கப்பட்டது.",
+      te: "హెచ్చరిక: ఏటీఎం స్విచ్‌లో అక్రమ మార్పులు గుర్తించబడ్డాయి. అనుమానాస్పద పోర్ట్ నిలిపివేయబడింది.",
+      bn: "সতর্কতা: এটিএম সুইচে ডেটা ম্যানিপুলেশন ধরা পড়েছে। সন্দেহভাজন পোর্ট অবিলম্বে ব্লক করা হয়েছে।",
+      kn: "ಎಚ್ಚರಿಕೆ: ಎಟಿಎಂ ಸ್ವಿಚ್‌ನಲ್ಲಿ ಅಕ್ರಮ ತಿದ್ದುಪಡಿ ಪತ್ತೆಯಾಗಿದೆ. ಪೋರ್ಟ್ ಅನ್ನು ನಿರ್ಬಂಧಿಸಲಾಗಿದೆ.",
+      ml: "മുന്നറിയിപ്പ്: എടിഎം സ്വിച്ചിൽ കൃത്രിമം കണ്ടെത്തി. സംശയാസ്പദമായ പോർട്ട് തടഞ്ഞു.",
+      pa: "ਚੇਤਾਵਨੀ: ਏਟੀਐਮ ਸਵਿੱਚ ਵਿੱਚ ਛੇੜਛਾੜ ਫੜੀ ਗਈ। ਪੋਰਟ ਨੂੰ ਬੰਦ ਕਰ ਦਿੱਤਾ ਗਿਆ ਹੈ।",
+      od: "ଚେତାବନୀ: ଏଟିଏମ ସୁଇଚରେ ଡାଟା ଟ୍ୟାମ୍ପରିଂ ଧରାପଡ଼ିଛି। ପୋର୍ଟ ବନ୍ଦ କରାଯାଇଛି।"
     }
   },
   {
@@ -521,34 +539,49 @@ const SCENARIOS_DATA: ScenarioConfig[] = [
     direct_exposure_inr: 2800000.00,
     is_material: true,
     rbi_status: "MANDATORY_6_HOUR_FILING",
-    current_step: 4,
+    current_step: 6,
     compromised_user: "usr_loan_off_104",
-    attacker_ip: "10.2.14.105",
+    attacker_ip: "10.88.14.12",
+    attacker_ips: [
+      "10.88.14.12 (Branch Mumbai-Fort Workstation 4)",
+      "10.88.14.1 (Branch LAN Gateway Router)"
+    ],
+    target_assets: [
+      "10.14.3.20 (cbs-loan-origination.bank.internal)",
+      "10.14.3.55 (kyc-verification.bank.internal)"
+    ],
+    compromised_credentials: "emp_9921_bm (Branch Operations Manager Credentials)",
+    payload_hash: "SHA256: 8a1b02c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a912b3c4d5e6f7a8b9c0d1e2f3",
+    payment_channel: "Core Banking (CBS) Loan Disbursal Engine",
     batch_id: "LOAN-DISBURSE-QUEUE-12",
-    impact_summary: "Rogue branch officer approving fraudulent loan applications and disbursing funds to personal mule accounts.",
-    affected_systems: ["CBS Loan Engine", "Branch Terminal Gateway", "Aadhaar KYC Service"],
+    impact_summary: "Branch loan officer logged in at 23:45 off-hours, overrode KYC verification requirements on 12 flagged loan applications, and routed payouts to unverified mule accounts.",
+    affected_systems: ["cbs-loan-origination.bank.internal", "kyc-verification.bank.internal"],
     step1: {
-      rbi_ref: "RBI/2021-22/Internal-Fraud-Prevention-Guidelines-Sec-3.4",
-      certin_category: "CIAD-2022-04 Insider Threat & Fraudulent Ledger Entries",
-      threshold_desc: "Internal employee privilege abuse bypassing maker-checker loan verification.",
-      clock_status: "Clock Running: 5h 50m remaining to submit Annexure-1",
-      penalty_at_stake: "₹ 50,00,000 (Internal Controls Failure)",
-      reasoning_bullet: "12 loans disbursed at midnight outside operating hours to accounts created <24h ago."
+      rbi_ref: "RBI Master Direction on Know Your Customer (KYC) & Fraud Monitoring",
+      certin_category: "CIAD-2022-14 Insider Threat, Unauthorized Modification & KYC Bypass Fraud",
+      threshold_desc: "Privileged insider bypass of mandatory AML/KYC checks with off-hours batch disbursal.",
+      clock_status: "6-Hour Statutory SLA Active (Filing Completed in 5.1 mins)",
+      penalty_at_stake: "₹ 35,00,000 + Internal Vigilance Inquiry",
+      reasoning_bullet: "Anomalous late-night access from branch IP modifying high-risk loan records."
     },
     step2: {
-      autonomous_detection_title: "Stage 1: Autonomous Threat Hunting (Off-Hours Disbursals)",
-      autonomous_detection_query: "FROM logs-banking-*\n| WHERE bank.channel == \"CBS_LOAN\" AND bank.aml_risk_score >= 90.0\n| STATS total_disbursed = sum(bank.amount_inr), count = count() BY user.name, source.ip",
-      autonomous_detection_explanation: "Flags loan disbursements executed during non-operational hours with extreme AML scores.",
-      forensic_blast_radius_title: "Stage 2: Mule Recipient Accounts Pivot",
-      forensic_blast_radius_query: "FROM logs-banking-*\n| WHERE user.name == \"usr_loan_off_104\"\n| KEEP @timestamp, bank.account_id, bank.amount_inr, bank.beneficiary_vpa\n| LIMIT 10",
-      discovered_entity: "10.2.14.105 (Branch LAN Terminal)",
-      compromised_id: "usr_loan_off_104 (Branch Loan Officer)",
+      autonomous_detection_title: "ES|QL Query: Off-Hours KYC Override & Disbursal Correlation",
+      autonomous_detection_query: `FROM logs-cbs-audit-default
+| WHERE user.name == "usr_loan_off_104" AND event.action == "KYC_MANUAL_OVERRIDE" AND event.time_hour >= 23
+| STATS count() as overrides by bank.loan_application_id, bank.disbursal_amount_inr`,
+      autonomous_detection_explanation: "Correlated late-night employee login with 12 manual KYC overrides bypassing Aadhaar verification.",
+      forensic_blast_radius_title: "ES|QL Query: Loan Disbursal Recipient Account Network",
+      forensic_blast_radius_query: `FROM logs-banking-default
+| WHERE bank.batch_id == "LOAN-DISBURSE-QUEUE-12"
+| STATS sum(bank.amount_inr) as total_loan_inr by bank.recipient_account_id`,
+      discovered_entity: "usr_loan_off_104 (Branch Officer)",
+      compromised_id: "CBS Loan Manager Role (Branch 0041)",
       sample_table: {
-        columns: ["@timestamp", "user.name", "bank.account_id", "bank.amount_inr"],
+        columns: ["@timestamp", "user.name", "loan.app_id", "kyc.status", "disbursal.inr", "branch.ip"],
         rows: [
-          ["2026-09-02T19:48:10Z", "usr_loan_off_104", "ACC-MULE-101", 240000.00],
-          ["2026-09-02T19:49:15Z", "usr_loan_off_104", "ACC-MULE-102", 235000.00],
-          ["2026-09-02T19:50:00Z", "usr_loan_off_104", "ACC-MULE-103", 250000.00]
+          ["2026-09-02T23:45:10Z", "usr_loan_off_104", "LN-2026-8812", "OVERRIDDEN", "2,50,000.00", "10.88.14.12"],
+          ["2026-09-02T23:46:02Z", "usr_loan_off_104", "LN-2026-8813", "OVERRIDDEN", "2,50,000.00", "10.88.14.12"],
+          ["2026-09-02T23:48:44Z", "usr_loan_off_104", "LN-2026-8814", "OVERRIDDEN", "2,00,000.00", "10.88.14.12"]
         ]
       }
     },
@@ -556,63 +589,56 @@ const SCENARIOS_DATA: ScenarioConfig[] = [
       corporate_count: 0,
       hni_count: 12,
       affected_accounts_total: 12,
-      account_examples: "12 Flagged Auto-Loan Accounts (Branch 104, Surat)",
-      business_risk_level: "HIGH (₹ 28.0 Lakhs at Risk)",
-      penalty_saved: "₹ 50,00,000 Penalty Saved",
-      core_systems_affected: "Finacle CBS Loan Origination Module",
+      account_examples: "12 Fabricated Borrower Accounts in Mumbai-Fort Branch",
+      business_risk_level: "HIGH INTERNAL FRAUD & COMPLIANCE RISK",
+      penalty_saved: "₹ 35,00,000 Saved via Timely Containment",
+      core_systems_affected: "Loan Origination System (LOS), Finacle Core Banking, Aadhaar eKYC Gateway",
       accounts_table: [
-        { account_id: "ACC-MULE-991201", name: "Flagged Auto Loan #01", tier: "HNI", balance_inr: 240000.00, exposed_inr: 240000.00, status: "FROZEN_PRESERVED", branch: "Ring Road Branch, Surat" },
-        { account_id: "ACC-MULE-991202", name: "Flagged Auto Loan #02", tier: "HNI", balance_inr: 235000.00, exposed_inr: 235000.00, status: "FROZEN_PRESERVED", branch: "Ring Road Branch, Surat" }
+        { account_id: "ACC-3319028", name: "Rameshwar Enterprises (Fake Entity)", tier: "HNI", balance_inr: 250000.00, exposed_inr: 250000.00, status: "FROZEN_PRESERVED", branch: "Fort Mumbai (0041)" },
+        { account_id: "ACC-3319029", name: "Balaji Auto Agency (Mule Account)", tier: "HNI", balance_inr: 250000.00, exposed_inr: 250000.00, status: "FROZEN_PRESERVED", branch: "Fort Mumbai (0041)" }
       ]
     },
     step4: {
       actions: [
-        { title: "Suspend Active Directory Account", system: "Active Directory (AD-DC-02)", type: "IAM", description: "Disable usr_loan_off_104 and revoke terminal session." },
-        { title: "Halt Outbound NEFT Clearing", system: "RBI NEFT Clearing Gateway", type: "Core Banking", description: "Hold outbound credit settlement for batch LOAN-DISBURSE-QUEUE-12." },
-        { title: "Place Debit Lien on Mule Accounts", system: "Core Banking Engine (CBS)", type: "Core Banking", description: "Freeze funds across 12 beneficiary mule accounts." }
+        { title: "Revoke Employee Active Directory & CBS System Privileges", description: "Suspended domain credentials and disabled role 'LOAN_OFFICER' in Finacle core.", system: "Active Directory / Finacle IAM", api_payload: { action: "REVOKE_USER", username: "usr_loan_off_104" } },
+        { title: "Place Disbursal Batch on Immediate Administrative Lien", description: "Blocked payout queue LOAN-DISBURSE-QUEUE-12 prior to NEFT clearing.", system: "Core Banking Engine", api_payload: { action: "HOLD_DISBURSAL_BATCH", batch_id: "LOAN-DISBURSE-QUEUE-12" } },
+        { title: "Dispatch Urgent Alert to Bank Internal Vigilance Committee", description: "Created high-priority forensic audit case with immutable event trail.", system: "Vigilance Case Management", api_payload: { action: "CREATE_AUDIT_TICKET", severity: "HIGH" } }
       ],
-      containment_success_msg: "Insider user suspended, NEFT settlement queue halted, and 12 mule accounts frozen."
+      containment_success_msg: "Insider credentials disabled. 12 fraudulent loan disbursals suspended prior to NEFT clearing."
     },
     step5: {
-      certin_title: "CYBER SECURITY INCIDENT REPORTING FORM - ANNEXURE 1",
-      affected_systems: "CBS Loan Disbursal & Branch Terminal Gateway",
-      remedial_summary: "Insider AD credentials revoked, NEFT payout suspended, debit freezes enforced."
+      affected_systems: "cbs-loan-origination (10.14.3.20), kyc-verification (10.14.3.55)",
+      remedial_summary: "Employee suspended; disbursals paused; internal vigilance notified; accounts frozen."
     },
     step6: {
-      sha256_hash: "0x2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e",
-      merkle_root: "0x5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b",
-      block_id: 108
+      block_hash: "0x5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f",
+      prev_hash: "0x3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d",
+      merkle_root: "0x00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"
     },
     topology: [
-      { id: "node-1", label: "Branch Officer Terminal", type: "ATTACKER", ip: "10.2.14.105", geo: "Surat Branch LAN", status: "ISOLATED", protocol: "RDP / Internal LAN", mitre_tag: "T1078 Valid Accounts", details: "Executing off-hours bulk loan disbursals." },
-      { id: "node-2", label: "CBS Loan Module", type: "TARGET", ip: "10.0.1.10", geo: "Central DC", status: "FROZEN", protocol: "Finacle RPC", mitre_tag: "T1565 Data Manipulation", details: "Disbursal queue halted." }
+      { id: "node-emp", label: "Branch Officer Workstation", type: "ATTACKER", ip: "10.88.14.12", geo: "Mumbai Fort Branch", status: "BLOCKED", protocol: "RDP/HTTPS", mitre_tag: "T1078", details: "Authorized branch terminal utilized during off-hours." },
+      { id: "node-los", label: "Loan Origination System", type: "CORE_SYSTEM", ip: "10.14.3.20", geo: "Mumbai Core DC", status: "ISOLATED", protocol: "HTTPS", mitre_tag: "T1565", details: "Credit workflow portal managing KYC verifications." },
+      { id: "node-cbsln", label: "Finacle CBS Disbursal", type: "TARGET", ip: "10.0.8.50", geo: "Mumbai Core DC", status: "FROZEN", protocol: "JSON RPC", mitre_tag: "T1565", details: "Core ledger holding outbound loan NEFT batch." }
     ],
     timeline: [
-      { offset: "+00:00", time: "19:46:00 UTC", title: "Off-Hours Login Detected", tactic: "Initial Access", source_ip: "10.2.14.105", description: "Branch loan officer logged in at 23:46 off-hours.", severity: "HIGH", raw_ecs: { "@timestamp": "2026-09-02T19:46:00Z", "user.name": "usr_loan_off_104" } },
-      { offset: "+00:03", time: "19:49:15 UTC", title: "12 Bulk Loans Approved Without Dual Auth", tactic: "Impact", source_ip: "10.2.14.105", description: "Maker-checker bypass triggered on ₹28.0 Lakhs in auto-loans.", severity: "CRITICAL", raw_ecs: { "@timestamp": "2026-09-02T19:49:15Z", "bank.amount_inr": 2800000.0 } },
-      { offset: "+00:06", time: "19:52:30 UTC", title: "Vigil Insider Isolation", tactic: "Remediation", source_ip: "10.0.1.10", description: "Account suspended and debit liens placed on all 12 mule accounts.", severity: "INFO", raw_ecs: { "@timestamp": "2026-09-02T19:52:30Z", "action": "SUSPEND_USER_AND_LIEN" } }
+      { offset: "+00:00", time: "23:40:02 UTC", title: "Off-Hours Branch Officer Login", tactic: "Initial Access", source_ip: "10.88.14.12", description: "usr_loan_off_104 logged in outside standard branch operating hours.", severity: "HIGH", raw_ecs: { "@timestamp": "2026-09-02T23:40:02Z", "user.name": "usr_loan_off_104" } },
+      { offset: "+00:05", time: "23:45:10 UTC", title: "Rapid KYC Override & Disbursal Request", tactic: "Privilege Abuse", source_ip: "10.88.14.12", description: "12 unverified loan applications manually approved in under 4 minutes.", severity: "CRITICAL", raw_ecs: { "@timestamp": "2026-09-02T23:45:10Z", "bank.amount_inr": 2800000.0 } },
+      { offset: "+00:06", time: "23:46:12 UTC", title: "VIGIL Autonomous Insider Intercept", tactic: "Defense Response", source_ip: "10.0.1.1", description: "Disbursal batch placed on hold; account access revoked.", severity: "INFO", raw_ecs: { "@timestamp": "2026-09-02T23:46:12Z", "event.action": "REVOKE_USER" } }
     ],
     copilot_prompts: [
-      { question: "List loan disbursements executed after hours with high AML score", esql_query: "FROM logs-banking-*\n| WHERE bank.channel == \"CBS_LOAN\" AND bank.aml_risk_score > 85.0\n| KEEP @timestamp, user.name, bank.amount_inr, bank.account_id", explanation: "Detects internal fraud during non-operational hours." }
+      { question: "List all loan applications approved after 22:00 hours with KYC overrides", esql_query: `FROM logs-cbs-audit-default | WHERE event.action == "KYC_MANUAL_OVERRIDE" AND event.hour >= 22 | LIMIT 20`, explanation: "Surfaces potential insider fraud during unauthorized branch night hours." }
     ],
-    terminal: {
-      default_query: "FROM logs-banking-*\n| WHERE bank.channel == \"CBS_LOAN\"\n| STATS sum(bank.amount_inr) BY user.name\n| LIMIT 10",
-      preset1_label: "⚡ Loan Disbursal Velocity",
-      preset1_query: "FROM logs-banking-*\n| WHERE bank.channel == \"CBS_LOAN\"\n| STATS count(), sum(bank.amount_inr) BY user.name",
-      preset2_label: "🎯 Mule Beneficiaries",
-      preset2_query: "FROM logs-banking-*\n| WHERE user.name == \"usr_loan_off_104\"\n| KEEP @timestamp, bank.amount_inr, bank.account_id"
-    },
     indic: {
-      hi: "सुरक्षा सूचना: शाखा स्तर पर अनधिकृत लोन वितरण का प्रयास पकड़ा गया। संबंधित अधिकारी का खाता तुरंत निलंबित कर दिया गया है।\n\n📌 शाखा कार्रवाई: ₹ 28.0 लाख के सभी 12 म्यूल खातों पर रोक लगा दी गई है।",
-      mr: "सुरक्षा सूचना: शाखेतून अनधिकृत कर्ज वाटपाचा प्रयत्न रोखण्यात आला आहे.\n\n📌 शाखा कृती: ₹ 28.0 लाखांची सर्व खाती गोठवण्यात आली आहेत.",
-      ta: "பாதுகாப்பு தகவல்: கிளை அளவில் கடன் முறைகேடு தடுக்கப்பட்டது.\n\n📌 கிளை நடவடிக்கை: ₹ 28.0 லட்சம் நிதி பாதுகாக்கப்பட்டு கணக்குகள் முடக்கப்பட்டன.",
-      te: "భద్రతా సమాచారం: బ్రాంచ్ లోన్ అధికారి అనధికారిక లావాదేవీలు నిలిపివేయబడ్డాయి.\n\n📌 బ్రాంచ్ చర్య: ₹ 28.0 లక్షల నిధులు ఫ్రీజ్ చేయబడ్డాయి.",
-      bn: "নিরাপত্তা তথ্য: শাখা স্তরে অননুমোদিত ঋণ বিতরণ প্রতিহত করা হয়েছে।\n\n📌 শাখা পদক্ষেপ: ₹ 28.0 লক্ষ টাকা সুরক্ষিত রাখা হয়েছে।"
-    },
-    escalation: {
-      slack_channel: "#soc-tier1-insider-threats",
-      pagerduty_urgency: "P2 (HIGH PRIORITY)",
-      jira_summary: "[HIGH] Insider KYC Bypass & Auto-Loan Disbursal Tampering - Ref INC-2026-0902-04"
+      hi: "चेतावनी: शाखा अधिकारी द्वारा नियमों का उल्लंघन कर देर रात लोन जारी करने का प्रयास पकड़ा गया। लोन वितरण तुरंत रोक दिया गया है।",
+      mr: "सावधान: बँकेच्या कर्मचाऱ्याकडून अनधिकृत कर्ज वाटपाचा प्रयत्न शोधला गेला. वाटप तात्काळ थांबवण्यात आले आहे.",
+      gu: "ચેતવણી: બ્રાન્ચ ઓફિસર દ્વારા અનધિકૃત લોન આપવાનો પ્રયાસ પકડાયો છે. લોન ચૂકવણી રોકી દેવામાં આવી છે.",
+      ta: "எச்சரிக்கை: வங்கி ஊழியரின் அங்கீகரிக்கப்படாத கடன் முயற்சி கண்டுபிடிக்கப்பட்டு தடுக்கப்பட்டது.",
+      te: "హెచ్చరిక: బ్యాంకు ఉద్యోగి చేసిన అనధికారిక రుణ పంపిణీ ప్రయత్నం అడ్డుకోబడింది.",
+      bn: "সতর্কতা: শাখা কর্মকর্তার অননুমোদিত ঋণ বিতরণ প্রচেষ্টা আটকানো হয়েছে।",
+      kn: "ಎಚ್ಚರಿಕೆ: ಬ್ಯಾಂಕ್ ಅಧಿಕಾರಿಯ ಅನಧಿಕೃತ ಸಾಲ ವಿತರಣೆ ಪ್ರಯತ್ನವನ್ನು ತಡೆಯಲಾಗಿದೆ.",
+      ml: "മുന്നറിയിപ്പ്: ബാങ്ക് ജീവനക്കാരന്റെ അനധികൃത വായ്പ വിതരണ ശ്രമം തടഞ്ഞു.",
+      pa: "ਚੇਤਾਵਨੀ: ਬੈਂਕ ਅਧਿਕਾਰੀ ਵੱਲੋਂ ਅਣਅਧਿਕਾਰਤ ਲੋਨ ਵੰਡਣ ਦੀ ਕੋਸ਼ਿਸ਼ ਰੋਕ ਦਿੱਤੀ ਗਈ ਹੈ।",
+      od: "ଚେତାବନୀ: ବ୍ୟାଙ୍କ କର୍ମଚାରୀଙ୍କ ଅନଧିକୃତ ଋଣ ବଣ୍ଟନ ଉଦ୍ୟମକୁ ରୋକାଯାଇଛି।"
     }
   },
   {
@@ -626,31 +652,44 @@ const SCENARIOS_DATA: ScenarioConfig[] = [
     rbi_status: "BENIGN_FP_SUPPRESSED",
     current_step: 6,
     compromised_user: "system_batch_scheduler",
-    attacker_ip: "10.0.1.1",
+    attacker_ip: "10.14.0.50",
+    attacker_ips: [
+      "10.14.0.50 (CBS Batch Scheduler - Whitelisted Batch Daemon)"
+    ],
+    target_assets: [
+      "10.14.0.100 (cbs-database-cluster.bank.internal)"
+    ],
+    compromised_credentials: "svc_cbs_cron (Pre-Authorized System Cron Service)",
+    payload_hash: "SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    payment_channel: "Internal Core Batch Scheduler (Routine Maintenance)",
     batch_id: "MONTHLY-INTEREST-CALC-2026",
-    impact_summary: "High volume monthly interest calculation batch verified against maintenance calendar; benign false alarm suppressed.",
-    affected_systems: ["CBS Batch Engine", "Savings Deposit Sub-Ledger"],
+    impact_summary: "Scheduled monthly batch rebalancing executed at 02:00 AM. High ledger volume accurately correlated with maintenance calendar; false alarm suppressed automatically by Vigil.",
+    affected_systems: ["cbs-database-cluster.bank.internal"],
     step1: {
-      rbi_ref: "RBI/2021-22/Batch-Processing-Exemptions-Sec-2.1",
-      certin_category: "BENIGN_SCHEDULED_MAINTENANCE",
-      threshold_desc: "Pre-approved monthly maintenance window. AML risk score < 5.0 across all records.",
-      clock_status: "NO FILING REQUIRED (Benign Maintenance Flow)",
-      penalty_at_stake: "₹ 0 (False Positive Correctly Suppressed)",
-      reasoning_bullet: "Volume spike is 100% correlated with scheduled CBS cron job; zero anomalous external IPs."
+      rbi_ref: "RBI Information Security Guidelines (Routine Operations Exemption)",
+      certin_category: "CIAD-2022-00 Routine Scheduled Operation / False Positive Triage",
+      threshold_desc: "Zero financial risk. Pre-approved operational change ticket (CHG-88210).",
+      clock_status: "Suppressed (No Regulatory Filing Required)",
+      penalty_at_stake: "₹ 0 (Benign Operation)",
+      reasoning_bullet: "Volume spike matched maintenance calendar; automated false positive suppression."
     },
     step2: {
-      autonomous_detection_title: "Stage 1: Autonomous Suppression Evaluation",
-      autonomous_detection_query: "FROM logs-banking-*\n| WHERE bank.batch_id LIKE \"MONTHLY-*\"\n| STATS routine_volume = count(), avg_aml_risk = avg(bank.aml_risk_score) BY bank.batch_id\n| WHERE avg_aml_risk < 5.0",
-      autonomous_detection_explanation: "Verifies that high-volume batch activity is benign and matches known maintenance parameters.",
-      forensic_blast_radius_title: "Stage 2: Verification of Zero External Activity",
-      forensic_blast_radius_query: "FROM logs-auth-*\n| WHERE user.name == \"system_batch_scheduler\"\n| KEEP @timestamp, source.ip, event.outcome",
-      discovered_entity: "10.0.1.1 (Internal Core Scheduler)",
-      compromised_id: "system_batch_scheduler (Automated Cron Daemon)",
+      autonomous_detection_title: "ES|QL Query: Change Ticket & Batch Scheduler Correlation",
+      autonomous_detection_query: `FROM logs-cbs-audit-default
+| WHERE user.name == "system_batch_scheduler" AND bank.batch_id == "MONTHLY-INTEREST-CALC-2026"
+| STATS count() as records_processed by bank.change_ticket_id`,
+      autonomous_detection_explanation: "Verified 100% match with approved Change Request CR-88210 in ServiceNow.",
+      forensic_blast_radius_title: "ES|QL Query: Ledger Balance Rebalancing Verification",
+      forensic_blast_radius_query: `FROM logs-banking-default
+| WHERE bank.batch_id == "MONTHLY-INTEREST-CALC-2026"
+| STATS sum(bank.credit_amount) - sum(bank.debit_amount) as net_diff`,
+      discovered_entity: "system_batch_scheduler (Authorized Cron)",
+      compromised_id: "None (Authorized System Routine)",
       sample_table: {
-        columns: ["@timestamp", "user.name", "bank.batch_id", "bank.aml_risk_score", "status"],
+        columns: ["@timestamp", "batch.name", "change.ticket", "status", "delta.inr"],
         rows: [
-          ["2026-09-02T19:55:00Z", "system_batch_scheduler", "MONTHLY-INTEREST-CALC-2026", 2.1, "BENIGN"],
-          ["2026-09-02T19:55:02Z", "system_batch_scheduler", "MONTHLY-INTEREST-CALC-2026", 1.8, "BENIGN"]
+          ["2026-09-02T02:00:00Z", "MONTHLY-INTEREST-CALC", "CHG-88210", "APPROVED", "0.00"],
+          ["2026-09-02T02:05:00Z", "MONTHLY-INTEREST-CALC", "CHG-88210", "COMPLETED", "0.00"]
         ]
       }
     },
@@ -658,99 +697,106 @@ const SCENARIOS_DATA: ScenarioConfig[] = [
       corporate_count: 5000,
       hni_count: 15000,
       affected_accounts_total: 50000,
-      account_examples: "All Retail & Corporate Savings Accounts",
-      business_risk_level: "ZERO RISK (Pre-Approved Routine Operation)",
-      penalty_saved: "Analyst Fatigue Averted",
-      core_systems_affected: "CBS Batch Computing Engine",
+      account_examples: "50,000 Standard Savings Bank Accounts (Routine Interest Accrual)",
+      business_risk_level: "ZERO RISK (BENIGN NOISE SUPPRESSED)",
+      penalty_saved: "Analyst Fatigue Prevented (2.5 Hours SOC Time Saved)",
+      core_systems_affected: "Finacle Batch Engine (Operating within normal scheduled envelope)",
       accounts_table: [
-        { account_id: "ACC-RETAIL-ALL", name: "Standard Retail Savings Ledger", tier: "Retail", balance_inr: 500000000.00, exposed_inr: 0.0, status: "NORMAL", branch: "All Branches" }
+        { account_id: "ACC-0019284", name: "Standard Savings Account Pool", tier: "Retail", balance_inr: 500000000.00, exposed_inr: 0.00, status: "NORMAL", branch: "All Branches" }
       ]
     },
     step4: {
       actions: [
-        { title: "Validate Against Maintenance Calendar", system: "ITSM Change Management", type: "Audit", description: "Correlate batch run with approved RFC-2026-0902-MONTH-END." },
-        { title: "Auto-Close Alert Zero Trigger", system: "Vigil SOC Engine", type: "Automation", description: "Close alert without waking Tier-1 on-call analysts." }
+        { title: "Auto-Suppress Alert Zero Alarm", description: "Vigil marked alert as benign false positive after validating digital signature of change ticket.", system: "Vigil Rule Engine", api_payload: { action: "SUPPRESS_ALERT", reason: "CHANGE_APPROVED" } },
+        { title: "Record Telemetry in Routine Health Ledger", description: "Appended routine health metric to Elastic observability index.", system: "Elastic Observability", api_payload: { action: "RECORD_METRIC", status: "HEALTHY" } }
       ],
-      containment_success_msg: "Batch verified against change management calendar; alert closed as benign false positive."
+      containment_success_msg: "False alarm suppressed automatically. Zero analyst intervention required."
     },
     step5: {
-      certin_title: "INTERNAL INCIDENT CLOSURE REPORT (NO STATUTORY FILING REQUIRED)",
-      affected_systems: "CBS Batch Engine (Scheduled Maintenance)",
-      remedial_summary: "Confirmed pre-approved interest calculation batch. No security compromise."
+      affected_systems: "cbs-database-cluster (10.14.0.100)",
+      remedial_summary: "No remediation needed. Scheduled batch executed successfully."
     },
     step6: {
-      sha256_hash: "0x0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b",
-      merkle_root: "0x3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d",
-      block_id: 109
+      block_hash: "0x7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b",
+      prev_hash: "0x5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f",
+      merkle_root: "0x3344556677889900aabbccddeeff00112233445566778899aabbccddeeff0011"
     },
     topology: [
-      { id: "node-1", label: "Core Batch Scheduler", type: "BENIGN_DAEMON", ip: "10.0.1.1", geo: "Primary DC", status: "BENIGN", protocol: "Cron / Internal Loopback", mitre_tag: "N/A - Benign Cron", details: "Executing pre-scheduled monthly interest accrual." },
-      { id: "node-2", label: "Savings Deposit Ledger", type: "CORE_SYSTEM", ip: "10.0.1.2", geo: "Primary DC", status: "ACTIVE", protocol: "Finacle RPC", mitre_tag: "N/A - Legitimate Batch", details: "Routine ledger update." }
+      { id: "node-cron", label: "Core Batch Scheduler", type: "BENIGN_DAEMON", ip: "10.14.0.50", geo: "Mumbai Core DC", status: "BENIGN", protocol: "Internal RPC", mitre_tag: "N/A", details: "Pre-scheduled internal cron process calculating savings account interest." },
+      { id: "node-db", label: "Finacle Database Cluster", type: "CORE_SYSTEM", ip: "10.14.0.100", geo: "Mumbai Core DC", status: "ACTIVE", protocol: "SQL/Oracle RAC", mitre_tag: "N/A", details: "Core database processing monthly batch ledger updates." }
     ],
     timeline: [
-      { offset: "+00:00", time: "19:54:00 UTC", title: "Month-End Batch Calculation Started", tactic: "Maintenance", source_ip: "10.0.1.1", description: "Automated interest accrual batch triggered on schedule.", severity: "LOW", raw_ecs: { "@timestamp": "2026-09-02T19:54:00Z", "bank.batch_id": "MONTHLY-INTEREST-CALC-2026" } },
-      { offset: "+00:01", time: "19:55:00 UTC", title: "Vigil Automated FP Suppression", tactic: "Verification", source_ip: "10.0.1.1", description: "Vigil verified RFC change management approval and closed alert.", severity: "INFO", raw_ecs: { "@timestamp": "2026-09-02T19:55:00Z", "action": "AUTO_SUPPRESS" } }
+      { offset: "+00:00", time: "02:00:00 UTC", title: "Batch Interest Job Started", tactic: "Scheduled Job", source_ip: "10.14.0.50", description: "Service scheduler started month-end interest crediting per schedule.", severity: "INFO", raw_ecs: { "@timestamp": "2026-09-02T02:00:00Z", "job.name": "MONTHLY_INTEREST" } },
+      { offset: "+00:05", time: "02:05:00 UTC", title: "VIGIL Auto-Suppression Gate", tactic: "Autonomous Triage", source_ip: "10.0.1.1", description: "Vigil correlated with change ticket and suppressed Alert Zero trigger.", severity: "INFO", raw_ecs: { "@timestamp": "2026-09-02T02:05:00Z", "event.action": "SUPPRESS_ALERT" } }
     ],
     copilot_prompts: [
-      { question: "Verify monthly interest batch AML risk distribution", esql_query: "FROM logs-banking-*\n| WHERE bank.batch_id LIKE \"MONTHLY-*\"\n| STATS avg_aml = avg(bank.aml_risk_score), max_aml = max(bank.aml_risk_score) BY bank.batch_id", explanation: "Confirms benign nature of monthly interest calculation." }
+      { question: "Verify change management approval status for current running batch", esql_query: `FROM logs-cbs-audit-default | WHERE bank.batch_id == "MONTHLY-INTEREST-CALC-2026" | STATS count() by bank.change_ticket_id`, explanation: "Confirms that the volume spike corresponds to an authorized change window." }
     ],
-    terminal: {
-      default_query: "FROM logs-banking-*\n| WHERE bank.batch_id LIKE \"MONTHLY-*\"\n| STATS routine_volume = count(), avg_aml_risk = avg(bank.aml_risk_score) BY bank.batch_id",
-      preset1_label: "⚡ Batch AML Score",
-      preset1_query: "FROM logs-banking-*\n| WHERE bank.batch_id LIKE \"MONTHLY-*\"\n| STATS avg(bank.aml_risk_score)",
-      preset2_label: "🎯 Scheduler Audit",
-      preset2_query: "FROM logs-auth-*\n| WHERE user.name == \"system_batch_scheduler\"\n| KEEP @timestamp, source.ip, event.outcome"
-    },
     indic: {
-      hi: "सिस्टम सूचना: माह के अंत में कोर बैंकिंग ब्याज गणना सफलतापूर्वक पूरी हुई। असामान्य मात्रा को पूर्व-अनुमोदित रखरखाव के रूप में सत्यापित किया गया।\n\n📌 शाखा कार्रवाई: किसी सुरक्षा कार्रवाई की आवश्यकता नहीं है।",
-      mr: "सिस्टम सूचना: नियमित व्याज जमा प्रक्रिया यशस्वीरीत्या पूर्ण झाली.\n\n📌 शाखा कृती: कोणत्याही सुरक्षेच्या कारवाईची आवश्यकता नाही.",
-      ta: "அமைப்பு தகவல்: மாத இறுதி வட்டி கணக்கீட்டு செயல்முறை வெற்றிகரமாக முடிந்தது.\n\n📌 கிளை நடவடிக்கை: எந்த பாதுகாப்பு நடவடிக்கையும் தேவையில்லை.",
-      te: "సిస్టమ్ సమాచారం: నెలవారీ వడ్డీ గణన ప్రక్రియ విజయవంతంగా పూర్తయింది.\n\n📌 బ్రాంచ్ చర్య: ఎలాంటి భద్రతా చర్యలు అవసరం లేదు.",
-      bn: "নিরাপত্তা ঘটনা সারসংক্ষেপ: মাস-শেষের নিয়মিত সুদ জমা প্রক্রিয়া সফলভাবে সম্পন্ন হয়েছে।\n\n📌 শাখা পদক্ষেপ: কোনও নিরাপত্তা পদক্ষেপের প্রয়োজন নেই।"
-    },
-    escalation: {
-      slack_channel: "#soc-tier1-maintenance-logs",
-      pagerduty_urgency: "LOW (INFORMATIONAL)",
-      jira_summary: "[AUTO-CLOSED] Month-End Routine Interest Batch Verified"
+      hi: "सूचना: महीने के अंत में ब्याज गणना का नियमित कार्य सफलतापूर्वक पूरा हुआ। सतर्कता एआई द्वारा झूठी चेतावनी को स्वतः निरस्त कर दिया गया है।",
+      mr: "माहिती: महिन्याच्या अखेरचे व्याज जमा करण्याचे नियमित काम पूर्ण झाले. सतर्कता एआयने खोटा अलार्म रद्द केला.",
+      gu: "માહિતી: મહિનાના અંતે વ્યાજ ગણતરીનું નિયમિત કામ પૂર્ણ થયું. વિજિલ એઆઈએ ખોટી ચેતવણી રદ કરી.",
+      ta: "தகவல்: மாதாந்திர வட்டி கணக்கீட்டு பணி வெற்றிகரமாக முடிந்தது. விஜி ஏஐ தவறான எச்சரிக்கையை தள்ளுபடி செய்தது.",
+      te: "సమాచారం: నెలవారీ వడ్డీ గణన విజయవంతంగా పూర్తయింది. విగిల్ ఏఐ తప్పుడు హెచ్చరికను తొలగించింది.",
+      bn: "তথ্য: মাস শেষের সুদ গণনার নিয়মিত কাজ সম্পন্ন হয়েছে। ভিজিল এআই ভুল অ্যালার্ম বাতিল করেছে।",
+      kn: "ಮಾಹಿತಿ: ತಿಂಗಳ ಕೊನೆಯ ಬಡ್ಡಿ ಲೆಕ್ಕಾಚಾರ ಯಶಸ್ವಿಯಾಗಿ ಮುಗಿದಿದೆ. ವಿಜಿಲ್ ಎಐ ಸುಳ್ಳು ಎಚ್ಚರಿಕೆಯನ್ನು ರದ್ದುಗೊಳಿಸಿದೆ.",
+      ml: "വിവരം: മാസാവസാന പലിശ കണക്കുകൂട്ടൽ പൂർത്തിയായി. തെറ്റായ അലാറം വിഗിൽ എഐ ഒഴിവാക്കി.",
+      pa: "ਜਾਣਕਾਰੀ: ਮਹੀਨੇ ਦੇ ਅੰਤ ਦਾ ਵਿਆਜ ਗਿਣਨ ਦਾ ਕੰਮ ਪੂਰਾ ਹੋ ਗਿਆ। ਝੂਠਾ ਅਲਾਰਮ ਰੱਦ ਕੀਤਾ ਗਿਆ।",
+      od: "ସୂଚନା: ମାସିକ ସୁଧ ଗଣନା ସଫଳତାର ସହ ଶେଷ ହୋଇଛି। ଭିଜିଲ ଏଆଇ ନକଲି ଆଲାର୍ମକୁ ବାତିଲ କରିଛି।"
     }
   },
   {
     incident_id: "INC-2026-0902-06",
     title: "SWIFT MT103 Cross-Border Wire Interception & Sanction Bypass",
     severity: "CRITICAL",
-    threat_tactic: "Exfiltration / Financial Wire Fraud",
+    threat_tactic: "Data Manipulation / Financial Exfiltration",
     mitre_id: "T1565.001",
     direct_exposure_inr: 142000000.00,
     is_material: true,
     rbi_status: "MANDATORY_6_HOUR_FILING",
-    current_step: 4,
-    compromised_user: "swift_operator_mum",
-    attacker_ip: "192.0.2.77",
-    batch_id: "SWIFT-OUTBOUND-CORP-99",
-    impact_summary: "Interception of outbound SWIFT MT103 payment stream altering beneficiary IBANs to offshore shell accounts.",
-    affected_systems: ["SWIFT Alliance Gateway", "Treasury Wire Engine", "OFAC/RBI Sanction Screening Server"],
+    current_step: 6,
+    compromised_user: "swift_operator_lvl3",
+    attacker_ip: "185.220.101.99",
+    attacker_ips: [
+      "185.220.101.99 (Adversary C2 Server - Frankfurt, DE)",
+      "194.26.29.50 (Proxy Node - Sofia, BG)",
+      "10.14.99.14 (Compromised SWIFT Terminal 02)"
+    ],
+    target_assets: [
+      "10.14.99.1 (swift-alliance-gateway.bank.internal)",
+      "10.14.99.20 (aml-screening.bank.internal)"
+    ],
+    compromised_credentials: "swift_operator_lvl3 (SWIFT MT103 Key Exchange Token)",
+    payload_hash: "SHA256: 91ab23cd45ef67890123456789abcdef0123456789abcdef0123456789abcdef",
+    payment_channel: "SWIFT International Wire Transfer (MT103/MT202)",
+    batch_id: "SWIFT-OUT-20260902-004",
+    impact_summary: "Adversary intercepted outbound SWIFT MT103 wire messages, altering beneficiary IBAN and correspondent BIC to route funds to an offshore sanctioned entity while bypassing real-time sanction checks.",
+    affected_systems: ["swift-alliance-gateway.bank.internal", "aml-screening.bank.internal"],
     step1: {
-      rbi_ref: "RBI/2022-23/Master-Direction-Cross-Border-Remittance-Controls-Sec-7.1",
-      certin_category: "CIAD-2022-04 High-Value Cross-Border Wire Tampering",
-      threshold_desc: "Direct financial exposure > ₹10 Crore across international foreign exchange settlement queues.",
-      clock_status: "Clock Running: 5h 42m remaining to submit Annexure-1",
-      penalty_at_stake: "₹ 1,00,00,000 (FEMA & IT Act Violation)",
-      reasoning_bullet: "Critical international wire tampering altering destination BIC/IBAN codes on 4 corporate foreign exchange wires."
+      rbi_ref: "RBI Master Direction on SWIFT Operating Controls & Cross-Border Messaging",
+      certin_category: "CIAD-2022-01 Compromise of Critical SWIFT Inter-Bank Wire Infrastructure",
+      threshold_desc: "High-value cross-border wire tampering exceeding ₹14.20 Crore exposure.",
+      clock_status: "6-Hour Statutory SLA Active (Filing Completed in 3.9 mins)",
+      penalty_at_stake: "₹ 2,00,00,000 + SWIFT Network Sanctions",
+      reasoning_bullet: "Altered SWIFT MT103 message checksum with modified beneficiary routing code."
     },
     step2: {
-      autonomous_detection_title: "Stage 1: Autonomous Detection (High-Value Cross-Border Spikes)",
-      autonomous_detection_query: "FROM logs-banking-*\n| WHERE bank.channel == \"SWIFT_WIRE\" AND bank.amount_inr > 20000000.00\n| STATS total_wire = sum(bank.amount_inr), count = count() BY source.ip, user.name, bank.batch_id\n| SORT total_wire DESC",
-      autonomous_detection_explanation: "Identifies anomalous high-value SWIFT remittance batches with sudden destination IBAN changes.",
-      forensic_blast_radius_title: "Stage 2: Sanction List Correlation & Wire Blast Radius",
-      forensic_blast_radius_query: "FROM logs-banking-*\n| WHERE source.ip == \"192.0.2.77\" OR user.name == \"swift_operator_mum\"\n| KEEP @timestamp, bank.account_id, bank.amount_inr, bank.customer_tier\n| LIMIT 10",
-      discovered_entity: "192.0.2.77 (Offshore C2 Proxy)",
-      compromised_id: "swift_operator_mum (SWIFT Alliance Operator)",
+      autonomous_detection_title: "ES|QL Query: SWIFT Checksum Mismatch & Sanction Bypass Detection",
+      autonomous_detection_query: `FROM logs-swift-default
+| WHERE swift.message_type == "MT103" AND swift.validation_status == "CHECKSUM_FAILED"
+| STATS sum(swift.amount_inr) as wire_exposure by swift.beneficiary_bic, swift.sender_bic`,
+      autonomous_detection_explanation: "Detected forged SWIFT MT103 payload where message hash did not match HSM signature.",
+      forensic_blast_radius_title: "ES|QL Query: Sanctioned Correspondent Bank Analysis",
+      forensic_blast_radius_query: `FROM logs-swift-default
+| WHERE swift.aml_sanction_match == true
+| STATS count() by swift.beneficiary_iban, swift.sanction_list_id`,
+      discovered_entity: "185.220.101.99 (Offshore C2)",
+      compromised_id: "SWIFT Alliance Gateway Operator Key",
       sample_table: {
-        columns: ["@timestamp", "user.name", "bank.amount_inr", "bank.customer_tier"],
+        columns: ["@timestamp", "swift.msg_id", "beneficiary.iban", "amount.inr", "sanction.flag"],
         rows: [
-          ["2026-09-02T19:10:00Z", "swift_operator_mum", 45000000.00, "Corporate"],
-          ["2026-09-02T19:11:30Z", "swift_operator_mum", 52000000.00, "Corporate"],
-          ["2026-09-02T19:13:10Z", "swift_operator_mum", 45000000.00, "Corporate"]
+          ["2026-09-02T19:15:22Z", "MT103-990182", "DE89370400440532013000", "7,10,00,000.00", "TRUE (OFAC-MATCH)"],
+          ["2026-09-02T19:16:04Z", "MT103-990183", "CH93007620116238529577", "7,10,00,000.00", "TRUE (OFAC-MATCH)"]
         ]
       }
     },
@@ -758,439 +804,400 @@ const SCENARIOS_DATA: ScenarioConfig[] = [
       corporate_count: 3,
       hni_count: 0,
       affected_accounts_total: 3,
-      account_examples: "Adani Global Port Corp, Larsen Industrial Exports, Vedanta Forex Treasury",
-      business_risk_level: "CRITICAL (₹ 14.20 Crore Direct Wire Risk)",
-      penalty_saved: "₹ 1,00,00,000 Saved",
-      core_systems_affected: "SWIFT Alliance Access Server (Mumbai Fort DC)",
+      account_examples: "3 High-Value Cross-Border Corporate Treasury Accounts",
+      business_risk_level: "CRITICAL INTERNATIONAL SANCTION & FINANCIAL LOSS RISK",
+      penalty_saved: "₹ 2,00,00,000 Saved via Timely Containment",
+      core_systems_affected: "SWIFT Alliance Gateway, Real-Time Sanction Screening Engine (OFAC/RBI), Treasury Settlement",
       accounts_table: [
-        { account_id: "ACC-CORP-998812", name: "Adani Global Port Logistics", tier: "Corporate", balance_inr: 850000000.00, exposed_inr: 52000000.00, status: "FROZEN_PRESERVED", branch: "Fort Commercial, Mumbai" },
-        { account_id: "ACC-CORP-441109", name: "Larsen Industrial Global Exports", tier: "Corporate", balance_inr: 420000000.00, exposed_inr: 45000000.00, status: "FROZEN_PRESERVED", branch: "Ballard Estate, Mumbai" },
-        { account_id: "ACC-CORP-330198", name: "Vedanta International Forex Treasury", tier: "Corporate", balance_inr: 390000000.00, exposed_inr: 45000000.00, status: "FROZEN_PRESERVED", branch: "BKC Special Banking, Mumbai" }
+        { account_id: "ACC-9901823", name: "Apex International Trade Treasury", tier: "Corporate", balance_inr: 450000000.00, exposed_inr: 71000000.00, status: "FROZEN_PRESERVED", branch: "International Banking Mumbai (0090)" },
+        { account_id: "ACC-9901824", name: "Global Petroleum Imports Escrow", tier: "Corporate", balance_inr: 320000000.00, exposed_inr: 71000000.00, status: "FROZEN_PRESERVED", branch: "International Banking Mumbai (0090)" }
       ]
     },
     step4: {
       actions: [
-        { title: "Sever SWIFT Alliance Gateway VPN", system: "Fortinet Edge Gateway", type: "Network", description: "Drop bilateral IPSEC tunnel to SWIFT international network." },
-        { title: "Revoke SWIFT Operator SmartCard & Session", system: "SWIFT HSM PKI", type: "IAM", description: "Revoke X.509 certificate for swift_operator_mum." },
-        { title: "Transmit Stop-Payment Broadcast", system: "SWIFT FIN Protocol", type: "Treasury", description: "Dispatch MT192 cancellation message to overseas correspondent banks." }
+        { title: "Broadcast SWIFT Stop-Payment Recall (MT192)", description: "Dispatched immediate automated wire recall to correspondent banks in Frankfurt and Zurich.", system: "SWIFT Alliance Access", api_payload: { action: "SEND_MT192_RECALL", msg_ids: ["MT103-990182", "MT103-990183"] } },
+        { title: "Revoke SWIFT Operator Level-3 Cryptographic Credentials", description: "Terminated smart-card session for swift_operator_lvl3 and forced physical token rotation.", system: "SWIFT Security Officer HSM", api_payload: { action: "REVOKE_SWIFT_KEY", user: "swift_operator_lvl3" } },
+        { title: "Quarantine SWIFT Terminal 02 to Out-of-Band VLAN", description: "Severed physical LAN link for terminal 10.14.99.14 to prevent lateral pivot.", system: "Edge NAC", api_payload: { action: "QUARANTINE_HOST", ip: "10.14.99.14" } }
       ],
-      containment_success_msg: "SWIFT gateway isolated, MT192 stop-payment dispatched, and ₹14.20 Cr wire transfer halted."
+      containment_success_msg: "SWIFT wire messages recalled in-flight. Terminal quarantined. Zero foreign exchange loss."
     },
     step5: {
-      certin_title: "CYBER SECURITY INCIDENT REPORTING FORM - ANNEXURE 1",
-      affected_systems: "SWIFT Alliance Gateway & Treasury Wire Engine",
-      remedial_summary: "SWIFT connection isolated, MT192 cancellation dispatched, smartcard certificate revoked."
+      affected_systems: "swift-alliance-gateway (10.14.99.1), aml-screening (10.14.99.20)",
+      remedial_summary: "SWIFT MT192 recall issued; operator tokens revoked; terminal quarantined; funds preserved."
     },
     step6: {
-      sha256_hash: "0x11223344556677889900aabbccddeeff11223344556677889900aabbccddeeff",
-      merkle_root: "0xaabbccddeeff00112233445566778899aabbccddeeff00112233445566778899",
-      block_id: 110
+      block_hash: "0x9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b",
+      prev_hash: "0x7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b",
+      merkle_root: "0x44556677889900aabbccddeeff00112233445566778899aabbccddeeff001122"
     },
     topology: [
-      { id: "node-1", label: "Offshore Threat Operator", type: "ATTACKER", ip: "192.0.2.77", geo: "Frankfurt / Offshore", status: "BLOCKED", protocol: "SSH Tunnel / TCP 22", mitre_tag: "T1565.001 Message Tampering", details: "Injecting altered MT103 payload." },
-      { id: "node-2", label: "SWIFT Alliance Gateway", type: "TARGET", ip: "10.0.18.2", geo: "Mumbai Fort DC", status: "ISOLATED", protocol: "SWIFT FIN / MT103", mitre_tag: "T1005 Local System Exfiltration", details: "International foreign exchange wire switch." }
+      { id: "node-c2sw", label: "Offshore Threat C2", type: "ATTACKER", ip: "185.220.101.99", geo: "Frankfurt, DE", status: "BLOCKED", protocol: "TLS 1.3", mitre_tag: "T1565.001", details: "Adversary infrastructure intercepting wire payloads." },
+      { id: "node-term", label: "SWIFT Terminal 02", type: "GATEWAY", ip: "10.14.99.14", geo: "Mumbai Treasury DC", status: "ISOLATED", protocol: "SWIFT CBT", mitre_tag: "T1078", details: "Operator terminal with manipulated memory hook." },
+      { id: "node-swgw", label: "SWIFT Alliance Access", type: "CORE_SYSTEM", ip: "10.14.99.1", geo: "Mumbai Core DC", status: "ACTIVE", protocol: "SWIFTNet", mitre_tag: "T1565.001", details: "Primary gateway communicating with SWIFT global network." }
     ],
     timeline: [
-      { offset: "+00:00", time: "19:08:00 UTC", title: "SWIFT HSM PKI Token Compromise", tactic: "Credential Access", source_ip: "192.0.2.77", description: "Attacker acquired operator session via compromised jump host.", severity: "CRITICAL", raw_ecs: { "@timestamp": "2026-09-02T19:08:00Z", "user.name": "swift_operator_mum" } },
-      { offset: "+00:03", time: "19:11:30 UTC", title: "4 High-Value Outbound MT103 Wires Injected", tactic: "Impact", source_ip: "192.0.2.77", description: "₹14.20 Crore foreign exchange remittance routed to unverified offshore IBANs.", severity: "CRITICAL", raw_ecs: { "@timestamp": "2026-09-02T19:11:30Z", "bank.amount_inr": 142000000.0 } },
-      { offset: "+00:05", time: "19:13:30 UTC", title: "Vigil MT192 Emergency Stop Dispatched", tactic: "Remediation", source_ip: "10.0.18.2", description: "Vigil automated pipeline triggered MT192 cancellation broadcast halting overseas clearance.", severity: "INFO", raw_ecs: { "@timestamp": "2026-09-02T19:13:30Z", "action": "STOP_SWIFT_WIRE" } }
+      { offset: "+00:00", time: "19:14:00 UTC", title: "SWIFT Terminal Memory Inversion", tactic: "Defense Evasion", source_ip: "10.14.99.14", description: "DLL side-loading detected on SWIFT Alliance client workstation.", severity: "CRITICAL", raw_ecs: { "@timestamp": "2026-09-02T19:14:00Z", "process.name": "swift_client.exe" } },
+      { offset: "+00:01", time: "19:15:22 UTC", title: "Tampered MT103 Wire Injected", tactic: "Financial Exfiltration", source_ip: "185.220.101.99", description: "Outbound wire for ₹ 14.20 Crore directed to sanctioned foreign beneficiary.", severity: "CRITICAL", raw_ecs: { "@timestamp": "2026-09-02T19:15:22Z", "swift.amount_inr": 142000000.0 } },
+      { offset: "+00:02", time: "19:16:30 UTC", title: "VIGIL Autonomous SWIFT Recall", tactic: "Defense Response", source_ip: "10.0.1.1", description: "VIGIL dispatched MT192 stop-payment recall and locked terminal.", severity: "INFO", raw_ecs: { "@timestamp": "2026-09-02T19:16:30Z", "event.action": "SEND_MT192" } }
     ],
     copilot_prompts: [
-      { question: "List all outbound international wires > ₹1 Crore", esql_query: "FROM logs-banking-*\n| WHERE bank.channel == \"SWIFT_WIRE\" AND bank.amount_inr > 10000000.00\n| KEEP @timestamp, user.name, bank.amount_inr, bank.account_id", explanation: "Detects large corporate cross-border wire anomalies." }
+      { question: "List all SWIFT MT103 messages where beneficiary BIC is under sanction scrutiny", esql_query: `FROM logs-swift-default | WHERE swift.sanction_match == true | STATS count(), sum(swift.amount_inr) by swift.beneficiary_bic`, explanation: "Surfaces attempted wire transfers directed to high-risk foreign entities." }
     ],
-    terminal: {
-      default_query: "FROM logs-banking-*\n| WHERE bank.channel == \"SWIFT_WIRE\"\n| STATS total_wire = sum(bank.amount_inr) BY user.name\n| LIMIT 10",
-      preset1_label: "⚡ SWIFT Remittance Volume",
-      preset1_query: "FROM logs-banking-*\n| WHERE bank.channel == \"SWIFT_WIRE\"\n| STATS sum(bank.amount_inr)",
-      preset2_label: "🎯 Operator Audit",
-      preset2_query: "FROM logs-auth-*\n| WHERE user.name == \"swift_operator_mum\"\n| KEEP @timestamp, source.ip, event.outcome"
-    },
     indic: {
-      hi: "सुरक्षा अलर्ट: स्विफ्ट (SWIFT) विदेशी मुद्रा वायर ट्रांसफर पर गंभीर छेड़छाड़ का पता चला है। तत्काल प्रभाव से वायर ट्रांसफर रोक दिया गया है।\n\n📌 शाखा कार्रवाई: ₹ 14.20 करोड़ का विदेशी प्रेषण सफलतापूर्वक रोक दिया गया है।",
-      mr: "सुरक्षा सूचना: स्विफ्ट आंतरराष्ट्रीय वायर ट्रान्सफरमधील मोठा फेरफार तात्काळ थांबवण्यात आला आहे.\n\n📌 शाखा कृती: ₹ 14.20 कोटींचा निधी सुरक्षित करण्यात आला आहे.",
-      ta: "பாதுகாப்பு எச்சரிக்கை: ஸ்விஃப்ட் சர்வதேச பணப் பரிவர்த்தனை முறைகேடு தடுத்து நிறுத்தப்பட்டது.\n\n📌 கிளை நடவடிக்கை: ₹ 14.20 கோடி நிதி இழப்பு தவிர்க்கப்பட்டது.",
-      te: "భద్రతా సమాచారం: స్విఫ్ట్ అంతర్జాతీయ వైర్ బదిలీలలో మోసం నిరోధించబడింది.\n\n📌 బ్రాంచ్ చర్య: ₹ 14.20 కోట్ల నిధులు రక్షించబడ్డాయి.",
-      bn: "নিরাপত্তা সতর্কতা: সুইফট আন্তর্জাতিক ওয়্যার ট্রান্সফার জালিয়াতি প্রতিহত করা হয়েছে।\n\n📌 শাখা পদক্ষেপ: ₹ 14.20 কোটি টাকা সুরক্ষিত রাখা হয়েছে।"
-    },
-    escalation: {
-      slack_channel: "#soc-tier1-swift-fraud",
-      pagerduty_urgency: "P1 (CRITICAL INCIDENT)",
-      jira_summary: "[CRITICAL] SWIFT MT103 Cross-Border Wire Interception - Ref INC-2026-0902-06"
+      hi: "चेतावनी: स्विफ्ट अंतरराष्ट्रीय मनी ट्रांसफर में धोखाधड़ी (₹ 14.20 करोड़) पकड़ी गई। रिकॉल मैसेज भेजकर विदेशी ट्रांसफर रोक दिया गया है।",
+      mr: "सावधान: स्विफ्ट आंतरराष्ट्रीय व्यवहारात छेडछाड (₹ 14.20 कोटी) शोधली गेली. पैसे पाठवणे तात्काळ थांबवले आहे.",
+      gu: "ચેતવણી: સ્વિફ્ટ આંતરરાષ્ટ્રીય વાયર ટ્રાન્સફરમાં ચેડાં (₹ 14.20 કરોડ) પકડાયા છે. પેમેન્ટ તાત્કાલિક રોકી દેવામાં આવ્યું છે.",
+      ta: "எச்சரிக்கை: ஸ்விஃப்ட் சர்வதேச பணப்பரிவர்த்தனை மோசடி தடுக்கப்பட்டது.",
+      te: "హెచ్చరిక: స్విఫ్ట్ అంతర్జాతీయ వైర్ బదిలీ మోసం అడ్డుకోబడింది.",
+      bn: "সতর্কতা: সুইফ্ট আন্তর্জাতিক ওয়্যার ট্রান্সফার জালিয়াতি আটকানো হয়েছে।",
+      kn: "ಎಚ್ಚರಿಕೆ: ಸ್ವಿಫ್ಟ್ ಅಂತರರಾಷ್ಟ್ರೀಯ ಹಣ ವರ್ಗಾವಣೆ ವಂಚನೆಯನ್ನು ತಡೆಯಲಾಗಿದೆ.",
+      ml: "മുന്നറിയിപ്പ്: സ്വിഫ്റ്റ് അന്താരാഷ്ട്ര പണമിടപാട് തട്ടിപ്പ് തടഞ്ഞു.",
+      pa: "ਚੇਤਾਵਨੀ: ਸਵਿਫਟ ਅੰਤਰਰਾਸ਼ਟਰੀ ਵਾਇਰ ਟ੍ਰਾਂਸਫਰ ਧੋਖਾਧੜੀ ਰੋਕ ਦਿੱਤੀ ਗਈ।",
+      od: "ଚେତାବନୀ: ସୁଇଫ୍ଟ ଆନ୍ତର୍ଜାତୀୟ ଟ୍ରାନ୍ସଫର ଠକେଇକୁ ରୋକାଯାଇଛି।"
     }
   },
   {
     incident_id: "INC-2026-0902-07",
     title: "Cloud Storage IAM Leakage & Bulk Customer Statement Scraping",
     severity: "HIGH",
-    threat_tactic: "Credential Access / Exfiltration",
-    mitre_id: "T1552.001",
+    threat_tactic: "Exfiltration / Cloud Storage Scraping",
+    mitre_id: "T1530",
     direct_exposure_inr: 7850000.00,
     is_material: true,
     rbi_status: "MANDATORY_6_HOUR_FILING",
-    current_step: 3,
-    compromised_user: "aws_statement_archiver",
+    current_step: 6,
+    compromised_user: "iam_service_account_backup",
     attacker_ip: "198.51.100.199",
-    batch_id: "S3-STATEMENT-BULK-01",
+    attacker_ips: [
+      "198.51.100.199 (Scraper VM - Virginia, US)",
+      "104.244.76.13 (Scraper Proxy Pool - London, UK)"
+    ],
+    target_assets: [
+      "s3://apex-prod-customer-statements-ap-south-1 (AWS S3 Bucket)",
+      "10.14.5.12 (iam-key-vault.bank.internal)"
+    ],
+    compromised_credentials: "AKIAIOSFODNN7EXAMPLE (Leaked AWS IAM Access Key ID)",
+    payload_hash: "SHA256: 55a4b3c2d1e0f9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4",
+    payment_channel: "Cloud Core Storage & Customer Statement Vault",
+    batch_id: "S3-SCRAPE-JOB-7712",
     impact_summary: "Leaked AWS S3 bucket IAM credentials used to scrape 25,000 PDF account statements containing PII and financial balances.",
-    affected_systems: ["AWS S3 Statement Archive (ap-south-1)", "Customer Document Vault", "IAM Key Vault"],
+    affected_systems: ["s3://apex-prod-customer-statements-ap-south-1", "iam-key-vault.bank.internal"],
     step1: {
-      rbi_ref: "RBI/2021-22/Customer-Data-Protection-Framework-Sec-6.2",
-      certin_category: "CIAD-2022-02 Data Breach & Customer Financial PII Exfiltration",
-      threshold_desc: "Massive breach of customer financial account statements exceeding 10,000 records.",
-      clock_status: "Clock Running: 5h 46m remaining to submit Annexure-1",
-      penalty_at_stake: "₹ 50,00,000 (DPDP Act & RBI Data Violation)",
-      reasoning_bullet: "25,000 bank statements downloaded in 8 minutes using compromised AWS IAM access key."
+      rbi_ref: "Digital Personal Data Protection (DPDP) Act 2023 & RBI IT Governance Directions",
+      certin_category: "CIAD-2022-11 Data Breach / Unauthorized Exfiltration of Customer PII",
+      threshold_desc: "Mass scraping of customer financial statements triggering mandatory 6-hour CERT-In breach filing.",
+      clock_status: "6-Hour Statutory SLA Active (Filing Completed in 4.0 mins)",
+      penalty_at_stake: "₹ 50,00,000 to ₹ 250 Crore under DPDP Act",
+      reasoning_bullet: "High velocity S3 GetObject burst consuming sensitive bank statement objects."
     },
     step2: {
-      autonomous_detection_title: "Stage 1: Autonomous Detection (S3 Object Get Spikes)",
-      autonomous_detection_query: "FROM logs-audit-*\n| WHERE event.action == \"s3:GetObject\" AND destination.domain LIKE \"*.s3.ap-south-1.amazonaws.com\"\n| STATS download_count = count() BY source.ip, user.name\n| WHERE download_count > 500\n| SORT download_count DESC",
-      autonomous_detection_explanation: "Detects mass data exfiltration from statement archiving buckets.",
-      forensic_blast_radius_title: "Stage 2: Customer PII Impact Assessment",
-      forensic_blast_radius_query: "FROM logs-banking-*\n| WHERE user.name == \"aws_statement_archiver\"\n| KEEP @timestamp, source.ip, bank.customer_tier, bank.account_id\n| LIMIT 10",
-      discovered_entity: "198.51.100.199 (Public Cloud Scraper)",
-      compromised_id: "aws_statement_archiver (AWS S3 Archival IAM)",
+      autonomous_detection_title: "ES|QL Query: CloudTrail S3 GetObject Burst Anomaly",
+      autonomous_detection_query: `FROM logs-aws-cloudtrail-default
+| WHERE event.action == "s3:GetObject" AND user.name == "iam_service_account_backup"
+| STATS count() as statement_count by source.ip, aws.s3.bucket_name
+| WHERE statement_count > 1000`,
+      autonomous_detection_explanation: "Detected high-speed download of 25,000 customer PDF files from unauthorized US IP address.",
+      forensic_blast_radius_title: "ES|QL Query: Customer PII Impact Assessment",
+      forensic_blast_radius_query: `FROM logs-aws-cloudtrail-default
+| WHERE aws.s3.bucket_name == "apex-prod-customer-statements"
+| STATS count_distinct(aws.s3.object_key) by source.ip`,
+      discovered_entity: "198.51.100.199 (Scraper Server)",
+      compromised_id: "AKIAIOSFODNN7EXAMPLE (AWS Access Key)",
       sample_table: {
-        columns: ["@timestamp", "user.name", "event.action", "target_bucket"],
+        columns: ["@timestamp", "source.ip", "s3.bucket", "objects.scraped", "user_agent"],
         rows: [
-          ["2026-09-02T19:35:01Z", "aws_statement_archiver", "s3:GetObject", "apex-bank-prod-statements-2026"],
-          ["2026-09-02T19:35:05Z", "aws_statement_archiver", "s3:GetObject", "apex-bank-prod-statements-2026"],
-          ["2026-09-02T19:35:10Z", "aws_statement_archiver", "s3:GetObject", "apex-bank-prod-statements-2026"]
+          ["2026-09-02T19:35:01Z", "198.51.100.199", "apex-prod-customer-statements", "25,000 PDFs", "aws-sdk-go/v1.38.0"],
+          ["2026-09-02T19:34:40Z", "104.244.76.13", "apex-prod-customer-statements", "450 PDFs", "aws-sdk-go/v1.38.0"]
         ]
       }
     },
     step3: {
-      corporate_count: 120,
-      hni_count: 850,
+      corporate_count: 500,
+      hni_count: 24500,
       affected_accounts_total: 25000,
-      account_examples: "Corporate Statement Vault & HNI Wealth Dossiers",
-      business_risk_level: "HIGH (25,000 High-Profile Customer Statements Leaked)",
-      penalty_saved: "₹ 50,00,000 Regulatory Fine Averted",
-      core_systems_affected: "AWS S3 Statement Vault (ap-south-1)",
+      account_examples: "25,000 Customer Account Statements & PAN/Aadhaar Metadata",
+      business_risk_level: "HIGH DATA PRIVACY & REGULATORY BREACH RISK",
+      penalty_saved: "₹ 50,00,000 Statutory Mitigation Saved",
+      core_systems_affected: "AWS S3 Cloud Infrastructure (ap-south-1 Mumbai), Customer Document Vault",
       accounts_table: [
-        { account_id: "ACC-CORP-VAULT", name: "Corporate Financial Statements Archive", tier: "Corporate", balance_inr: 7850000.00, exposed_inr: 7850000.00, status: "FROZEN_PRESERVED", branch: "Central Archival, Mumbai" }
+        { account_id: "ACC-1002941", name: "Sunil Mittal Trust Account", tier: "HNI", balance_inr: 8500000.00, exposed_inr: 850000.00, status: "FROZEN_PRESERVED", branch: "New Delhi Main (0010)" }
       ]
     },
     step4: {
       actions: [
-        { title: "Delete Leaked AWS IAM Access Key", system: "AWS IAM (ap-south-1)", type: "Cloud IAM", description: "Immediately delete access key ID AKIA... and revoke active STS sessions." },
-        { title: "Apply S3 Bucket Deny-All Policy", system: "AWS S3 Bucket Policy", type: "Storage", description: "Enforce explicit deny on apex-bank-prod-statements except from trusted VPC endpoint." },
-        { title: "Trigger Customer Compromise Notifications", system: "CRM Notification Service", type: "Compliance", description: "Send automated security notice to impacted corporate clients." }
+        { title: "Revoke Leaked AWS IAM Access Key (AKIAIOSFODNN7EXAMPLE)", description: "Executed AWS IAM API call to delete compromised access key and detach admin policy.", system: "AWS IAM / KMS", api_payload: { action: "DELETE_ACCESS_KEY", key_id: "AKIAIOSFODNN7EXAMPLE" } },
+        { title: "Attach Strict IP-Restricted Bucket Policy to Customer S3 Vault", description: "Enforced bucket policy restricting GetObject access solely to internal bank VPC endpoints.", system: "AWS S3 Policy Engine", api_payload: { action: "APPLY_VPC_ENDPOINT_ONLY_POLICY" } },
+        { title: "Trigger Automated DPDP Breach Notification Workflow", description: "Compiled customer impact register and generated statutory Data Protection Board draft.", system: "Compliance Engine", api_payload: { action: "DRAFT_DPDP_NOTICE", records: 25000 } }
       ],
-      containment_success_msg: "AWS IAM key revoked, S3 bucket locked down to VPC endpoint, and exfiltration halted."
+      containment_success_msg: "Leaked IAM key revoked. S3 bucket restricted to private VPC. DPDP compliance notification ready."
     },
     step5: {
-      certin_title: "CYBER SECURITY INCIDENT REPORTING FORM - ANNEXURE 1",
-      affected_systems: "AWS S3 Statement Archive (Mumbai)",
-      remedial_summary: "Leaked IAM credentials deleted, S3 bucket restricted to private VPC endpoint."
+      affected_systems: "s3://apex-prod-customer-statements (AWS ap-south-1)",
+      remedial_summary: "IAM credentials deleted; S3 bucket policy tightened; data exfiltration severed."
     },
     step6: {
-      sha256_hash: "0x44556677889900aabbccddeeff11223344556677889900aabbccddeeff112233",
-      merkle_root: "0xddeeff00112233445566778899aabbccddeeff00112233445566778899aabbcc",
-      block_id: 111
+      block_hash: "0xb1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2",
+      prev_hash: "0x9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b",
+      merkle_root: "0x556677889900aabbccddeeff00112233445566778899aabbccddeeff00112233"
     },
     topology: [
-      { id: "node-1", label: "Cloud Scraping Botnet", type: "ATTACKER", ip: "198.51.100.199", geo: "Public Cloud IP", status: "BLOCKED", protocol: "HTTPS / AWS API", mitre_tag: "T1552.001 Credentials in Files", details: "Scraping statement objects using leaked secret key." },
-      { id: "node-2", label: "AWS S3 Statement Archive", type: "TARGET", ip: "52.95.12.8", geo: "AWS Mumbai (ap-south-1)", status: "FROZEN", protocol: "S3 REST", mitre_tag: "T1005 Cloud Storage Exfiltration", details: "Locked to private VPC." }
+      { id: "node-c2s3", label: "Scraper VM (Virginia)", type: "ATTACKER", ip: "198.51.100.199", geo: "Virginia, US", status: "BLOCKED", protocol: "HTTPS/AWS API", mitre_tag: "T1530", details: "Automated scraping bot utilizing leaked IAM credentials." },
+      { id: "node-s3", label: "AWS S3 Customer Vault", type: "TARGET", ip: "s3.ap-south-1.amazonaws.com", geo: "AWS Mumbai (ap-south-1)", status: "ISOLATED", protocol: "HTTPS/S3 API", mitre_tag: "T1530", details: "Object storage bucket holding 25,000 customer PDF bank statements." }
     ],
     timeline: [
-      { offset: "+00:00", time: "19:32:00 UTC", title: "AWS IAM Key Used from Untrusted IP", tactic: "Initial Access", source_ip: "198.51.100.199", description: "Archival IAM credentials used from public non-VPC IP address.", severity: "HIGH", raw_ecs: { "@timestamp": "2026-09-02T19:32:00Z", "user.name": "aws_statement_archiver" } },
+      { offset: "+00:00", time: "19:32:10 UTC", title: "Leaked IAM Key Used from Foreign IP", tactic: "Initial Access", source_ip: "198.51.100.199", description: "GetCallerIdentity invoked with leaked backup access key from AWS US-East region.", severity: "HIGH", raw_ecs: { "@timestamp": "2026-09-02T19:32:10Z", "event.action": "GetCallerIdentity" } },
       { offset: "+00:03", time: "19:35:01 UTC", title: "Bulk S3 GetObject Burst Triggered", tactic: "Exfiltration", source_ip: "198.51.100.199", description: "25,000 PDF account statements downloaded.", severity: "CRITICAL", raw_ecs: { "@timestamp": "2026-09-02T19:35:01Z", "event.action": "s3:GetObject" } },
-      { offset: "+00:05", time: "19:37:00 UTC", title: "Vigil Cloud IAM Auto-Revocation", tactic: "Remediation", source_ip: "52.95.12.8", description: "Vigil automated cloud response deleted access key and enforced VPC endpoint lock.", severity: "INFO", raw_ecs: { "@timestamp": "2026-09-02T19:37:00Z", "action": "DELETE_IAM_KEY" } }
+      { offset: "+00:04", time: "19:36:12 UTC", title: "VIGIL Autonomous Key Revocation", tactic: "Defense Response", source_ip: "10.0.1.1", description: "VIGIL deleted IAM key and enforced strict VPC bucket policy.", severity: "INFO", raw_ecs: { "@timestamp": "2026-09-02T19:36:12Z", "event.action": "DELETE_KEY" } }
     ],
     copilot_prompts: [
-      { question: "Audit all S3 GetObject requests by external IPs", esql_query: "FROM logs-audit-*\n| WHERE destination.domain LIKE \"*.s3.*.amazonaws.com\"\n| STATS downloads = count() BY source.ip, user.name\n| SORT downloads DESC", explanation: "Detects unauthorized cloud storage downloads." }
+      { question: "Find all AWS CloudTrail calls from non-Indian IPs accessing S3 buckets", esql_query: `FROM logs-aws-cloudtrail-default | WHERE event.source == "s3.amazonaws.com" AND NOT source.geo.country_name == "India" | LIMIT 50`, explanation: "Identifies unauthorized cross-border access to bank cloud storage." }
     ],
-    terminal: {
-      default_query: "FROM logs-audit-*\n| WHERE event.action == \"s3:GetObject\"\n| STATS count = count() BY source.ip, user.name\n| SORT count DESC\n| LIMIT 10",
-      preset1_label: "⚡ S3 Object Access",
-      preset1_query: "FROM logs-audit-*\n| WHERE event.action == \"s3:GetObject\"\n| STATS count() BY source.ip",
-      preset2_label: "🎯 Cloud IAM Audit",
-      preset2_query: "FROM logs-auth-*\n| WHERE user.name == \"aws_statement_archiver\"\n| KEEP @timestamp, source.ip, event.outcome"
-    },
     indic: {
-      hi: "सुरक्षा सूचना: क्लाउड स्टोरेज (AWS S3) पर अनधिकृत एक्सेस रोका गया। लीक हुए क्रेडेंशियल्स को तुरंत हटा दिया गया है।\n\n📌 शाखा कार्रवाई: डेटा सुरक्षित है और बकेट को केवल प्राइवेट वीपीसी तक सीमित कर दिया गया है।",
-      mr: "सुरक्षा सूचना: क्लाउड स्टोरेजवरील अनधिकृत प्रवेश रोखण्यात आला आहे.\n\n📌 शाखा कृती: सर्व क्रेडेंशियल्स तात्काळ रद्द करण्यात आले आहेत.",
-      ta: "பாதுகாப்பு தகவல்: கிளவுட் சேமிப்பக தரவு திருட்டு முயற்சி தடுக்கப்பட்டது.\n\n📌 கிளை நடவடிக்கை: பாதுகாப்பு நெறிமுறைகள் வலுப்படுத்தப்பட்டுள்ளன.",
-      te: "భద్రతా సమాచారం: క్లౌడ్ స్టోరేజ్‌పై అనధికారిక డేటా స్క్రాపింగ్ నిలిపివేయబడింది.\n\n📌 బ్రాంచ్ చర్య: సురక్షిత చర్యలు చేపట్టబడ్డాయి.",
-      bn: "নিরাপত্তা তথ্য: ক্লাউড স্টোরেজে অননুমোদিত অ্যাক্সেস প্রতিহত করা হয়েছে।\n\n📌 শাখা পদক্ষেপ: ডেটা সম্পূর্ণ সুরক্ষিত রাখা হয়েছে।"
-    },
-    escalation: {
-      slack_channel: "#soc-tier1-cloud-security",
-      pagerduty_urgency: "P2 (HIGH PRIORITY)",
-      jira_summary: "[HIGH] Cloud S3 Key Leakage & Customer Statement Scraping - Ref INC-2026-0902-07"
+      hi: "चेतावनी: क्लाउड स्टोरेज से ग्राहकों के बैंक स्टेटमेंट डाउनलोड करने का अनधिकृत प्रयास पकड़ा गया। एक्सेस की तुरंत रद्द कर दी गई है।",
+      mr: "सावधान: क्लाउड स्टोरेजमधून बँक स्टेटमेंट डाउनलोड करण्याचा अनधिकृत प्रयत्न शोधला गेला. ॲक्सेस की तात्काळ रद्द केली आहे.",
+      gu: "ચેતવણી: ક્લાઉડ સ્ટોરેજમાંથી બેંક સ્ટેટમેન્ટ ડાઉનલોડ કરવાનો અનધિકૃત પ્રયાસ પકડાયો છે. એક્સેસ કી રદ કરવામાં આવી છે.",
+      ta: "எச்சரிக்கை: கிளவுட் சேமிப்பகத்திலிருந்து வங்கி அறிக்கைகளை பதிவிறக்கும் முயற்சி தடுக்கப்பட்டது.",
+      te: "హెచ్చరిక: క్లౌడ్ స్టోరేజ్ నుండి బ్యాంక్ స్టేట్‌మెంట్‌లను డౌన్‌లోడ్ చేసే ప్రయత్నం అడ్డుకోబడింది.",
+      bn: "সতর্কতা: ক্লাউড স্টোরেজ থেকে ব্যাঙ্ক স্টেটমেন্ট ডাউনলোড করার প্রচেষ্টা আটকানো হয়েছে।",
+      kn: "ಎಚ್ಚರಿಕೆ: ಕ್ಲೌಡ್ ಸಂಗ್ರಹಣೆಯಿಂದ ಬ್ಯಾಂಕ್ ಸ್ಟೇಟ್‌ಮೆಂಟ್‌ಗಳನ್ನು ಡೌನ್‌ಲೋಡ್ ಮಾಡುವ ಪ್ರಯತ್ನವನ್ನು ತಡೆಯಲಾಗಿದೆ.",
+      ml: "മുന്നറിയിപ്പ്: ക്ലൗഡ് സ്റ്റോറേജിൽ നിന്ന് ബാങ്ക് സ്റ്റേറ്റ്‌മെന്റുകൾ ഡൗൺലോഡ് ചെയ്യാനുള്ള ശ്രമം തടഞ്ഞു.",
+      pa: "ਚੇਤਾਵਨੀ: ਕਲਾਉਡ ਸਟੋਰੇਜ ਤੋਂ ਬੈਂਕ ਸਟੇਟਮੈਂਟਾਂ ਡਾਊਨਲੋਡ ਕਰਨ ਦੀ ਕੋਸ਼ਿਸ਼ ਰੋਕ ਦਿੱਤੀ ਗਈ ਹੈ।",
+      od: "ଚେତାବନୀ: କ୍ଲାଉଡ ଷ୍ଟୋରେଜରୁ ବ୍ୟାଙ୍କ ଷ୍ଟେଟମେଣ୍ଟ ଡାଉନଲୋଡ଼ ଉଦ୍ୟମକୁ ରୋକାଯାଇଛି।"
     }
   },
   {
     incident_id: "INC-2026-0902-08",
     title: "Synthetic Identity Injection & Mule Merchant Onboarding Ring",
     severity: "HIGH",
-    threat_tactic: "Defense Evasion / Subvert Trust Controls",
-    mitre_id: "T1553",
+    threat_tactic: "Identity Spoofing / Financial Fraud",
+    mitre_id: "T1586",
     direct_exposure_inr: 4600000.00,
     is_material: true,
     rbi_status: "MANDATORY_6_HOUR_FILING",
-    current_step: 3,
-    compromised_user: "kyc_onboarding_svc",
-    attacker_ip: "203.0.113.245",
-    batch_id: "KYC-SYNTHETIC-RING-04",
-    impact_summary: "Automated injection of synthetic Aadhaar/PAN identity hashes into merchant digital onboarding pipeline to establish fake credit lines.",
-    affected_systems: ["Digital Merchant Onboarding API", "Aadhaar e-KYC Switch", "Credit Line Allotment Engine"],
+    current_step: 6,
+    compromised_user: "api_merchant_onboarding",
+    attacker_ip: "203.0.113.88",
+    attacker_ips: [
+      "203.0.113.88 (Fraud Ring Controller - Kolkata, IN)",
+      "103.21.244.15 (VPN Egress Pool - Delhi, IN)"
+    ],
+    target_assets: [
+      "10.14.4.15 (merchant-onboarding.bank.co.in)",
+      "10.14.4.80 (gstin-validation.bank.internal)"
+    ],
+    compromised_credentials: "25 Synthetic Merchant Identities & Fabricated GSTINs",
+    payload_hash: "SHA256: 1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+    payment_channel: "UPI Merchant Aggregator & Settlement Engine",
+    batch_id: "MULE-QR-RING-5510",
+    impact_summary: "Organized cybercrime ring registered 25 fictitious merchant QR accounts using fabricated GSTINs and forged Aadhaar/PAN cards to funnel and wash stolen funds.",
+    affected_systems: ["merchant-onboarding.bank.co.in", "gstin-validation.bank.internal"],
     step1: {
-      rbi_ref: "RBI/2022-23/Digital-Payment-Security-Controls-Sec-8.3",
-      certin_category: "CIAD-2022-04 Synthetic Identity & Merchant Ring Fraud",
-      threshold_desc: "Automated creation of 24 fake merchant accounts with fraudulent credit allotment.",
-      clock_status: "Clock Running: 5h 54m remaining to submit Annexure-1",
-      penalty_at_stake: "₹ 50,00,000 (KYC Regulatory Non-Compliance)",
-      reasoning_bullet: "24 merchant accounts onboarded in 90 seconds sharing duplicate forged digital signature hashes."
+      rbi_ref: "RBI Guidelines on Digital Payment Aggregators & Merchant Due Diligence",
+      certin_category: "CIAD-2022-15 Synthetic Identity Theft & Mule Merchant Laundering Network",
+      threshold_desc: "Coordinated syndicate registering fraudulent merchant QR settlement accounts totaling ₹ 46.0 Lakhs.",
+      clock_status: "6-Hour Statutory SLA Active (Filing Completed in 4.4 mins)",
+      penalty_at_stake: "₹ 40,00,000 + Merchant Aggregator License Suspension",
+      reasoning_bullet: "Multiple merchant registrations sharing identical bank accounts and device fingerprints."
     },
     step2: {
-      autonomous_detection_title: "Stage 1: Autonomous Detection (High-Speed KYC Registrations)",
-      autonomous_detection_query: "FROM logs-banking-*\n| WHERE bank.channel == \"MERCHANT_ONBOARD\" AND bank.kyc_verified == true\n| STATS onboard_count = count() BY source.ip, bank.batch_id\n| WHERE onboard_count >= 10\n| SORT onboard_count DESC",
-      autonomous_detection_explanation: "Flags synthetic merchant rings created in rapid bursts sharing forged biometric hashes.",
-      forensic_blast_radius_title: "Stage 2: Credit Limit Exposure Pivot",
-      forensic_blast_radius_query: "FROM logs-banking-*\n| WHERE source.ip == \"203.0.113.245\"\n| KEEP @timestamp, bank.account_id, bank.amount_inr, bank.customer_tier\n| LIMIT 10",
-      discovered_entity: "203.0.113.245 (Mule Syndicate Ingress)",
-      compromised_id: "kyc_onboarding_svc (Digital Onboarding Gateway)",
+      autonomous_detection_title: "ES|QL Query: Merchant Identity Clustering & Synthetic Entity Graph",
+      autonomous_detection_query: `FROM logs-merchant-onboarding-default
+| STATS count() as registrations, count_distinct(merchant.gstin) as gstin_count by device.fingerprint_hash, bank.settlement_account_id
+| WHERE registrations > 5`,
+      autonomous_detection_explanation: "Clustered 25 distinct merchant entities mapped to the exact same device fingerprint and settlement account.",
+      forensic_blast_radius_title: "ES|QL Query: QR Inflow & Velocity Funneling Tracking",
+      forensic_blast_radius_query: `FROM logs-banking-default
+| WHERE bank.channel == "UPI_QR" AND bank.batch_id == "MULE-QR-RING-5510"
+| STATS sum(bank.amount_inr) as total_laundered by bank.merchant_vpa`,
+      discovered_entity: "203.0.113.88 (Fraud Ring Admin)",
+      compromised_id: "25 Fabricated Merchant GSTIN Profiles",
       sample_table: {
-        columns: ["@timestamp", "user.name", "bank.account_id", "credit_limit_inr"],
+        columns: ["@timestamp", "merchant.name", "gstin.status", "settlement.account", "amount.inr"],
         rows: [
-          ["2026-09-02T19:42:01Z", "kyc_onboarding_svc", "ACC-MERCHANT-SYNTH-01", 200000.00],
-          ["2026-09-02T19:42:05Z", "kyc_onboarding_svc", "ACC-MERCHANT-SYNTH-02", 200000.00],
-          ["2026-09-02T19:42:10Z", "kyc_onboarding_svc", "ACC-MERCHANT-SYNTH-03", 200000.00]
+          ["2026-09-02T20:10:14Z", "Royal Fast Traders", "SYNTHETIC (INVALID)", "ACC-8812001", "1,85,000.00"],
+          ["2026-09-02T20:11:02Z", "Shree Ganesh Enterprise", "SYNTHETIC (INVALID)", "ACC-8812001", "1,95,000.00"],
+          ["2026-09-02T20:12:45Z", "Metro Mobile Hub", "SYNTHETIC (INVALID)", "ACC-8812001", "1,80,000.00"]
         ]
       }
     },
     step3: {
-      corporate_count: 24,
+      corporate_count: 25,
       hni_count: 0,
-      affected_accounts_total: 24,
-      account_examples: "24 Synthetic Shell Merchant Entities",
-      business_risk_level: "HIGH (₹ 46.0 Lakhs in Pre-Approved Credit Lines)",
-      penalty_saved: "₹ 50,00,000 KYC Penalty Saved",
-      core_systems_affected: "Merchant Onboarding Switch & e-KYC Server",
+      affected_accounts_total: 25,
+      account_examples: "25 Fictitious Sole Proprietorship QR Settlement Accounts",
+      business_risk_level: "HIGH AML / TERROR FINANCING & MULE NETWORK RISK",
+      penalty_saved: "₹ 40,00,000 Saved via Timely Containment",
+      core_systems_affected: "Merchant Onboarding API, GSTIN Live Verification Gateway, UPI QR Switch",
       accounts_table: [
-        { account_id: "ACC-SYNTH-MERCHANT-01", name: "Apex Synthetic Shell Corp #01", tier: "Corporate", balance_inr: 200000.00, exposed_inr: 200000.00, status: "FROZEN_PRESERVED", branch: "Digital Onboarding Hub" },
-        { account_id: "ACC-SYNTH-MERCHANT-02", name: "Apex Synthetic Shell Corp #02", tier: "Corporate", balance_inr: 200000.00, exposed_inr: 200000.00, status: "FROZEN_PRESERVED", branch: "Digital Onboarding Hub" }
+        { account_id: "ACC-8812001", name: "Royal Fast Traders (Mule Master)", tier: "Corporate", balance_inr: 4600000.00, exposed_inr: 4600000.00, status: "FROZEN_PRESERVED", branch: "Salt Lake Kolkata (0088)" }
       ]
     },
     step4: {
       actions: [
-        { title: "Block Ingress IP 203.0.113.245", system: "Edge Firewall", type: "Network", description: "Drop all merchant registration API packets from syndicate IP." },
-        { title: "Debit Freeze 24 Synthetic Merchant Accounts", system: "Core Banking Engine (CBS)", type: "Core Banking", description: "Freeze credit lines and lock payouts across the 24 identified shell accounts." },
-        { title: "Enforce Mandatory Video-KYC Fallback", system: "e-KYC Verification Engine", type: "Policy", description: "Force manual video-KYC and biometric verification for flagged merchant cluster." }
+        { title: "Immediate Suspension of 25 Fraudulent Merchant VPA Accounts", description: "Deboarded merchant IDs and disabled QR settlement across NPCI UPI switch.", system: "Merchant Management System", api_payload: { action: "DEBOARD_MERCHANT_RING", count: 25 } },
+        { title: "Place Settlement Account (ACC-8812001) on Total Freeze", description: "Enforced debit and credit freeze on central laundering master account.", system: "Finacle CBS", api_payload: { action: "TOTAL_FREEZE", account: "ACC-8812001" } },
+        { title: "Submit Suspicious Transaction Report (STR) to FIU-IND", description: "Generated official XML STR package for Financial Intelligence Unit - India.", system: "AML / FIU Reporting Gateway", api_payload: { action: "SUBMIT_STR", category: "SYNTHETIC_IDENTITY" } }
       ],
-      containment_success_msg: "Syndicate IP blocked, 24 synthetic merchant accounts frozen, and ₹46.0L credit lines secured."
+      containment_success_msg: "Merchant ring deboarded. Settlement accounts frozen. STR filed with FIU-IND."
     },
     step5: {
-      certin_title: "CYBER SECURITY INCIDENT REPORTING FORM - ANNEXURE 1",
-      affected_systems: "Digital Merchant Onboarding API & e-KYC Gateway",
-      remedial_summary: "Syndicate IP blocked, credit lines frozen, mandatory video-KYC enforced."
+      affected_systems: "merchant-onboarding (10.14.4.15), gstin-validation (10.14.4.80)",
+      remedial_summary: "25 merchant QR accounts deboarded; settlement account frozen; FIU-IND alerted."
     },
     step6: {
-      sha256_hash: "0x556677889900aabbccddeeff11223344556677889900aabbccddeeff11223344",
-      merkle_root: "0xeeff00112233445566778899aabbccddeeff00112233445566778899aabbccdd",
-      block_id: 112
+      block_hash: "0xc2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3",
+      prev_hash: "0xb1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2",
+      merkle_root: "0x6677889900aabbccddeeff00112233445566778899aabbccddeeff0011223344"
     },
     topology: [
-      { id: "node-1", label: "Mule Syndicate Botnet", type: "ATTACKER", ip: "203.0.113.245", geo: "Syndicate Ingress", status: "BLOCKED", protocol: "HTTPS / JSON API", mitre_tag: "T1553 Subvert Trust", details: "Injecting forged biometric Aadhaar tokens." },
-      { id: "node-2", label: "Merchant Onboarding API", type: "TARGET", ip: "10.0.5.20", geo: "AWS Mumbai", status: "ISOLATED", protocol: "REST", mitre_tag: "T1078 Valid Accounts", details: "24 accounts frozen." }
+      { id: "node-ring", label: "Mule Ring Operator", type: "ATTACKER", ip: "203.0.113.88", geo: "Kolkata, IN", status: "BLOCKED", protocol: "HTTPS", mitre_tag: "T1586", details: "Adversary generating synthetic identity merchant accounts." },
+      { id: "node-mportal", label: "Merchant Onboarding API", type: "GATEWAY", ip: "10.14.4.15", geo: "Mumbai DC", status: "ISOLATED", protocol: "REST/TLS", mitre_tag: "T1078", details: "Public onboarding portal targeted with fake GSTIN payloads." },
+      { id: "node-qr", label: "UPI QR Settlement Hub", type: "TARGET", ip: "10.14.4.80", geo: "Navi Mumbai DC", status: "FROZEN", protocol: "ISO 8583", mitre_tag: "T1586", details: "Clearing switch aggregating fraudulent QR disbursements." }
     ],
     timeline: [
-      { offset: "+00:00", time: "19:40:00 UTC", title: "Synthetic Registration Burst Started", tactic: "Initial Access", source_ip: "203.0.113.245", description: "24 merchant applications submitted in 90 seconds.", severity: "HIGH", raw_ecs: { "@timestamp": "2026-09-02T19:40:00Z", "bank.channel": "MERCHANT_ONBOARD" } },
-      { offset: "+00:02", time: "19:42:01 UTC", title: "Vigil Automated Syndicate Detection", tactic: "Defense Evasion", source_ip: "10.0.5.20", description: "Vigil identified duplicate biometric hash pattern and halted credit lines.", severity: "CRITICAL", raw_ecs: { "@timestamp": "2026-09-02T19:42:01Z", "bank.amount_inr": 4600000.0 } },
-      { offset: "+00:04", time: "19:44:00 UTC", title: "Vigil Account Freezes Dispatched", tactic: "Remediation", source_ip: "10.0.5.20", description: "All 24 synthetic accounts frozen and syndicate IP dropped.", severity: "INFO", raw_ecs: { "@timestamp": "2026-09-02T19:44:00Z", "action": "FREEZE_SYNTHETIC_RING" } }
+      { offset: "+00:00", time: "20:08:12 UTC", title: "Burst Merchant Registration Ingested", tactic: "Initial Access", source_ip: "203.0.113.88", description: "25 merchant registrations submitted in 4 minutes using same device hash.", severity: "CRITICAL", raw_ecs: { "@timestamp": "2026-09-02T20:08:12Z", "event.action": "MERCHANT_REGISTER" } },
+      { offset: "+00:02", time: "20:10:14 UTC", title: "Synthetic GSTIN Mismatch Detected", tactic: "Defense Evasion", source_ip: "203.0.113.88", description: "Automated GSTIN check returned entity non-existence status.", severity: "HIGH", raw_ecs: { "@timestamp": "2026-09-02T20:10:14Z", "gstin.status": "INVALID" } },
+      { offset: "+00:04", time: "20:12:45 UTC", title: "VIGIL Autonomous Deboarding", tactic: "Defense Response", source_ip: "10.0.1.1", description: "VIGIL deboarded all 25 merchant IDs and froze settlement account.", severity: "INFO", raw_ecs: { "@timestamp": "2026-09-02T20:12:45Z", "event.action": "DEBOARD_MERCHANT" } }
     ],
     copilot_prompts: [
-      { question: "List rapid merchant registrations created in last 1 hour", esql_query: "FROM logs-banking-*\n| WHERE bank.channel == \"MERCHANT_ONBOARD\"\n| STATS count() BY source.ip, bank.batch_id", explanation: "Detects merchant onboarding burst anomalies." }
+      { question: "Identify all merchant onboarding requests sharing the same bank settlement account", esql_query: `FROM logs-merchant-onboarding-default | STATS count() as count by bank.settlement_account_id | WHERE count > 1 | SORT count DESC`, explanation: "Uncovers mule merchant syndicates sharing common bank payout destinations." }
     ],
-    terminal: {
-      default_query: "FROM logs-banking-*\n| WHERE bank.channel == \"MERCHANT_ONBOARD\"\n| KEEP @timestamp, source.ip, bank.account_id, bank.amount_inr\n| LIMIT 10",
-      preset1_label: "⚡ Merchant Velocity",
-      preset1_query: "FROM logs-banking-*\n| WHERE bank.channel == \"MERCHANT_ONBOARD\"\n| STATS count() BY source.ip",
-      preset2_label: "🎯 Identity Audit",
-      preset2_query: "FROM logs-auth-*\n| WHERE user.name == \"kyc_onboarding_svc\"\n| KEEP @timestamp, source.ip, event.outcome"
-    },
     indic: {
-      hi: "सुरक्षा सूचना: डिजिटल मर्चेंट ऑनबोर्डिंग पर सिंथेटिक पहचान सिंडिकेट का हमला रोका गया। 24 फर्जी खातों को तुरंत सील कर दिया गया है।\n\n📌 शाखा कार्रवाई: ₹ 46.0 लाख की क्रेडिट लाइन सुरक्षित कर ली गई है।",
-      mr: "सुरक्षा सूचना: बनावट खाती तयार करण्याचा मोठा प्रयत्न हाणून पाडला आहे. सर्व 24 खाती गोठवण्यात आली आहेत.\n\n📌 शाखा कृती: ₹ 46.0 लाखांची क्रेडिट मर्यादा सुरक्षित करण्यात आली आहे.",
-      ta: "பாதுகாப்பு தகவல்: போலி வணிகர் கணக்குகள் தொடங்குவது தடுக்கப்பட்டது. 24 கணக்குகள் முடக்கப்பட்டன.\n\n📌 கிளை நடவடிக்கை: ₹ 46.0 லட்சம் கடன் வரம்பு பாதுகாக்கப்பட்டது.",
-      te: "భద్రతా సమాచారం: నకిలీ మర్చంట్ ఖాతాల సృష్టి నిరోధించబడింది. 24 ఖాతాలు ఫ్రీజ్ చేయబడ్డాయి.\n\n📌 బ్రాంచ్ చర్య: ₹ 46.0 లక్షల క్రెడిట్ నిధులు రక్షించబడ్డాయి.",
-      bn: "নিরাপত্তা তথ্য: জাল মার্চেন্ট অ্যাকাউন্ট খোলার প্রচেষ্টা প্রতিহত করা হয়েছে। ২৪টি অ্যাকাউন্ট সিল করা হয়েছে।\n\n📌 শাখা পদক্ষেপ: ₹ 46.0 লক্ষ টাকা সুরক্ষিত রাখা হয়েছে।"
-    },
-    escalation: {
-      slack_channel: "#soc-tier1-fraud-ring",
-      pagerduty_urgency: "P2 (HIGH PRIORITY)",
-      jira_summary: "[HIGH] Synthetic Identity Injection & Mule Merchant Onboarding Ring - Ref INC-2026-0902-08"
+      hi: "चेतावनी: नकली पहचान और जीएसटी नंबरों द्वारा 25 फर्जी मर्चेंट खाते खोलने का प्रयास पकड़ा गया। सभी खाते तुरंत ब्लॉक कर दिए गए हैं।",
+      mr: "सावधान: बनावट कागदपत्रांच्या आधारे २५ बनावट व्यापारी खाती सुरू करण्याचा प्रयत्न शोधला गेला. सर्व खाती तात्काळ गोठवली आहेत.",
+      gu: "ચેતવણી: બનાવટી દસ્તાવેજોથી ૨૫ નકલી મર્ચન્ટ ખાતાઓ બનાવવાનો પ્રયાસ પકડાયો છે. બધા ખાતાઓ બ્લોક કરી દેવાયા છે.",
+      ta: "எச்சரிக்கை: போலி அடையாளங்களைப் பயன்படுத்தி 25 போலி வணிகர் கணக்குகள் உருவாக்கப்பட்டது தடுக்கப்பட்டது.",
+      te: "హెచ్చరిక: నకిలీ పత్రాలతో 25 వ్యాపార ఖాతాలు తెరిచే ప్రయత్నం గుర్తించి నిరోధించబడింది.",
+      bn: "সতর্কতা: জাল পরিচয় ব্যবহার করে ২৫টি ভুয়া মার্চেন্ট অ্যাকাউন্ট খোলার প্রচেষ্টা আটকানো হয়েছে।",
+      kn: "ಎಚ್ಚರಿಕೆ: ನಕಲಿ ಗುರುತಿನ ಚೀಟಿ ಬಳಸಿ 25 ನಕಲಿ ವ್ಯಾಪಾರಿ ಖಾತೆಗಳನ್ನು ತೆರೆಯುವ ಪ್ರಯತ್ನವನ್ನು ತಡೆಯಲಾಗಿದೆ.",
+      ml: "മുന്നറിയിപ്പ്: വ്യാജ തിരിച്ചറിയൽ രേഖകൾ ഉപയോഗിച്ച് 25 വ്യാജ വ്യാപാരി അക്കൗണ്ടുകൾ ഉണ്ടാക്കിയത് തടഞ്ഞു.",
+      pa: "ਚੇਤਾਵਨੀ: ਨਕਲੀ ਪਛਾਣ ਵਰਤ ਕੇ 25 ਜਾਅਲੀ ਵਪਾਰੀ ਖਾਤੇ ਖੋਲ੍ਹਣ ਦੀ ਕੋਸ਼ਿਸ਼ ਰੋਕ ਦਿੱਤੀ ਗਈ ਹੈ।",
+      od: "ଚେତାବନୀ: ନକଲି ପରିଚୟ ବ୍ୟବହାର କରି ୨୫ଟି ବ୍ୟବସାୟୀ ଖାତା ଖୋଲିବା ଉଦ୍ୟମକୁ ବନ୍ଦ କରାଯାଇଛି।"
     }
   }
 ];
 
-export default function App() {
+export function App() {
   const [viewMode, setViewMode] = useState<"hub" | "detail">("hub");
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const [scenarios] = useState<ScenarioConfig[]>(INITIAL_SCENARIOS);
   const [selectedIncId, setSelectedIncId] = useState<string>("INC-2026-0902-01");
-  const [activeTab, setActiveTab] = useState<"workflow" | "topology" | "timeline" | "mitre" | "customers" | "telemetry" | "esql" | "certin" | "indic" | "ledger">("workflow");
-  const [activeStep, setActiveStep] = useState<number>(1);
-  const [isRunning, setIsRunning] = useState<boolean>(false);
-  const [containmentApproved, setContainmentApproved] = useState<boolean>(false);
+  const [activeTab, setActiveTab] = useState<string>("workflow");
+  const [currentStep, setCurrentStep] = useState<number>(1);
+  const [isExecuting, setIsExecuting] = useState<boolean>(false);
+  const [isApproved, setIsApproved] = useState<boolean>(false);
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [severityFilter, setSeverityFilter] = useState<string>("ALL");
+  const [backendOnline, setBackendOnline] = useState<boolean>(true);
+  const [showEscalateModal, setShowEscalateModal] = useState<boolean>(false);
+  const [selectedNode, setSelectedNode] = useState<TopologyNode | null>(null);
+  const [inspectingEcs, setInspectingEcs] = useState<Record<string, any> | null>(null);
+  const [esqlInput, setEsqlInput] = useState<string>("");
+  const [esqlResult, setEsqlResult] = useState<any>(null);
+  const [isQuerying, setIsQuerying] = useState<boolean>(false);
   const [selectedLang, setSelectedLang] = useState<string>("hi");
   const [translatedText, setTranslatedText] = useState<string>("");
   const [isTranslating, setIsTranslating] = useState<boolean>(false);
-  const [copiedNotification, setCopiedNotification] = useState<boolean>(false);
-  const [searchFilter, setSearchFilter] = useState<string>("");
-  const [severityFilter, setSeverityFilter] = useState<string>("ALL");
-  const [showCoTDrawer, setShowCoTDrawer] = useState<boolean>(true);
 
-  // Modals
-  const [showEscalateModal, setShowEscalateModal] = useState<boolean>(false);
-  const [rawEcsModalData, setRawEcsModalData] = useState<any | null>(null);
-  const [selectedTopologyNode, setSelectedTopologyNode] = useState<TopologyNode | null>(null);
-
-  // Live Telemetry Feed Simulation
-  const [liveLogs, setLiveLogs] = useState<{ id: string; time: string; channel: string; ip: string; status: string; amt: number }[]>([
-    { id: "LOG-9921", time: "Just now", channel: "UPI_GATEWAY", ip: "198.51.100.44", status: "BLOCKED", amt: 4200000.00 },
-    { id: "LOG-9920", time: "4s ago", channel: "NETBANKING", ip: "203.0.113.89", status: "WAF_DROP", amt: 350000.00 },
-    { id: "LOG-9919", time: "8s ago", channel: "ATM_SWITCH", ip: "10.14.88.22", status: "QUARANTINED", amt: 2833333.33 },
-    { id: "LOG-9918", time: "14s ago", channel: "CBS_LOAN", ip: "10.2.14.105", status: "HOLD", amt: 233333.33 },
-    { id: "LOG-9917", time: "22s ago", channel: "CORE_ENGINE", ip: "10.0.1.1", status: "BENIGN_PASS", amt: 4500.00 }
+  // Live Telemetry Stream
+  const [liveEvents, setLiveEvents] = useState<any[]>([
+    { id: "TXN-9021", time: "Just now", channel: "UPI", amt: 142000, ip: "198.51.100.44", status: "BLOCKED" },
+    { id: "TXN-9020", time: "3s ago", channel: "IMPS", amt: 85000, ip: "45.33.32.156", status: "BLOCKED" },
+    { id: "TXN-9019", time: "8s ago", channel: "ATM", amt: 50000, ip: "10.14.22.88", status: "BLOCKED" },
+    { id: "TXN-9018", time: "14s ago", channel: "UPI", amt: 4200, ip: "10.0.1.5", status: "SUCCESS" },
+    { id: "TXN-9017", time: "19s ago", channel: "NEFT", amt: 120000, ip: "10.0.1.12", status: "SUCCESS" }
   ]);
-  const [isTelemetryStreaming, setIsTelemetryStreaming] = useState<boolean>(true);
 
-  // Backend Health Ping
-  const [backendOnline, setBackendOnline] = useState<boolean>(false);
-  const [elasticClusterName, setElasticClusterName] = useState<string>("ap-south-1");
+  // SLA Timer in seconds (6 hours = 21600s)
+  const [slaSeconds, setSlaSeconds] = useState<number>(21340);
 
-  const API_BASE = ((import.meta as any).env?.VITE_API_URL as string) || "https://vigil-backend-k511.onrender.com";
+  const API_BASE = "https://vigil-backend-k511.onrender.com";
 
-  useEffect(() => {
-    fetch(`${API_BASE}/api/health`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.status === "HEALTHY") {
-          setBackendOnline(true);
-          if (data.elastic_cluster) setElasticClusterName(data.elastic_cluster);
-        }
-      })
-      .catch(() => setBackendOnline(false));
-  }, [API_BASE]);
-
-  // Active Scenario Configuration
-  const currentScenario = SCENARIOS_DATA.find(s => s.incident_id === selectedIncId) || SCENARIOS_DATA[0];
-
-  // Filtered Scenarios list based on search and severity
-  const filteredScenarios = SCENARIOS_DATA.filter(s => {
-    const matchSev = severityFilter === "ALL" || s.severity === severityFilter;
-    const matchSearch = s.title.toLowerCase().includes(searchFilter.toLowerCase()) || 
-                        s.incident_id.toLowerCase().includes(searchFilter.toLowerCase()) ||
-                        s.threat_tactic.toLowerCase().includes(searchFilter.toLowerCase()) ||
-                        s.compromised_user.toLowerCase().includes(searchFilter.toLowerCase()) ||
-                        s.attacker_ip.toLowerCase().includes(searchFilter.toLowerCase());
-    return matchSev && matchSearch;
-  });
-
-  // Aggregate Stats for Hub
-  const totalRupeeRisk = SCENARIOS_DATA.reduce((acc, s) => acc + s.direct_exposure_inr, 0);
-  const totalCritical = SCENARIOS_DATA.filter(s => s.severity === "CRITICAL").length;
-  const totalHigh = SCENARIOS_DATA.filter(s => s.severity === "HIGH").length;
-  const totalSuppressed = SCENARIOS_DATA.filter(s => !s.is_material).length;
-
-  // ES|QL Terminal State
-  const [esqlQuery, setEsqlQuery] = useState<string>(currentScenario.terminal.default_query);
-  const [esqlResult, setEsqlResult] = useState<any>(null);
-  const [isQuerying, setIsQuerying] = useState<boolean>(false);
-
-  // 6-Hour Clock Countdown State (starts at 5h 48m 12s)
-  const [secondsRemaining, setSecondsRemaining] = useState<number>(20892);
+  const currentScenario = scenarios.find(s => s.incident_id === selectedIncId) || scenarios[0];
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setSecondsRemaining(prev => (prev > 0 ? prev - 1 : 0));
+      setSlaSeconds(prev => (prev > 0 ? prev - 1 : 0));
     }, 1000);
     return () => clearInterval(timer);
   }, []);
 
-  // Update HTML class for dark/light theme
+  // Sync translation when scenario or language changes
   useEffect(() => {
-    const root = document.documentElement;
-    if (theme === "dark") {
-      root.classList.add("dark");
-      root.classList.remove("light");
-    } else {
-      root.classList.add("light");
-      root.classList.remove("dark");
+    if (currentScenario.indic) {
+      setTranslatedText(currentScenario.indic[selectedLang] || currentScenario.indic["hi"]);
     }
-  }, [theme]);
+  }, [selectedIncId, selectedLang, currentScenario]);
 
-  // When scenario changes, synchronize terminal and translation
-  const handleSelectScenario = (incId: string) => {
-    setSelectedIncId(incId);
-    setActiveStep(1);
-    const newSc = SCENARIOS_DATA.find(s => s.incident_id === incId) || SCENARIOS_DATA[0];
-    setContainmentApproved(newSc.incident_id === "INC-2026-0902-05");
-    setEsqlQuery(newSc.terminal.default_query);
-    setEsqlResult(null);
-    setSelectedTopologyNode(null);
-    setTranslatedText(newSc.indic[selectedLang] || newSc.indic["hi"]);
-    setViewMode("detail");
+  // Sync initial ES|QL input
+  useEffect(() => {
+    if (currentScenario.copilot_prompts && currentScenario.copilot_prompts.length > 0) {
+      setEsqlInput(currentScenario.copilot_prompts[0].esql_query);
+    }
+  }, [selectedIncId, currentScenario]);
+
+  const formatSla = (seconds: number) => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
   };
 
-  const formatCountdown = (totalSecs: number) => {
-    const hrs = Math.floor(totalSecs / 3600);
-    const mins = Math.floor((totalSecs % 3600) / 60);
-    const secs = totalSecs % 60;
-    return `${String(hrs).padStart(2, "0")}h ${String(mins).padStart(2, "0")}m ${String(secs).padStart(2, "0")}s`;
-  };
-
-  // Auto-Run 6-Step Workflow
-  const handleAutoRun = async () => {
-    setIsRunning(true);
-    for (let step = 1; step <= 6; step++) {
-      setActiveStep(step);
-      if (step === 4 && currentScenario.incident_id !== "INC-2026-0902-05") {
-        setContainmentApproved(false);
+  const handleRunAllSteps = () => {
+    setIsExecuting(true);
+    let step = 1;
+    const interval = setInterval(() => {
+      step++;
+      if (step <= 6) {
+        setCurrentStep(step);
+      } else {
+        clearInterval(interval);
+        setIsExecuting(false);
       }
-      await new Promise(r => setTimeout(r, 650));
-    }
-    setIsRunning(false);
+    }, 600);
   };
 
   const handleApproveContainment = () => {
-    setContainmentApproved(true);
+    setIsApproved(true);
+    setTimeout(() => {
+      setCurrentStep(5);
+    }, 500);
   };
 
-  const handleRunEsql = async () => {
+  const handleExecuteEsql = async () => {
     setIsQuerying(true);
     try {
-      const res = await fetch(`${API_BASE}/api/esql/execute`, {
+      const res = await fetch(`${API_BASE}/api/esql/query`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: esqlQuery })
+        body: JSON.stringify({ query: esqlInput })
       });
       if (res.ok) {
         const data = await res.json();
         setEsqlResult(data);
       } else {
-        throw new Error("API query fallback");
+        throw new Error("Local query simulation");
       }
-    } catch (e) {
+    } catch {
+      // High fidelity mock fallback
       setEsqlResult({
-        columns: currentScenario.step2.sample_table.columns.map(c => ({ name: c, type: "keyword" })),
-        values: currentScenario.step2.sample_table.rows,
-        took: 7
+        columns: [{ name: "@timestamp" }, { name: "source.ip" }, { name: "bank.amount_inr" }, { name: "threat.tactic" }, { name: "status" }],
+        values: [
+          [new Date().toISOString(), currentScenario.attacker_ip, currentScenario.direct_exposure_inr, currentScenario.threat_tactic, "INTERCEPTED"],
+          [new Date(Date.now() - 60000).toISOString(), currentScenario.attacker_ip, "0.00", "Probe", "FAILURE"]
+        ]
       });
     } finally {
       setIsQuerying(false);
     }
   };
 
-  // Client-Side PDF Binary Generator
+  // 2-Page Strictly Compliant CERT-In Annexure-1 Binary PDF Generator
   const generateClientCertInPdf = (sc: ScenarioConfig): Blob => {
-    const w = 595.28;
-    const h = 841.89;
-    const margin_x = 40.0;
+    const w = 595.28; // A4 width in points
+    const h = 841.89; // A4 height in points
+    const margin_x = 36.0;
     const content_w = w - 2 * margin_x;
-    let y = h - 40.0;
-    const stream: string[] = [];
 
     const escape = (text: any) =>
       String(text || "")
@@ -1199,124 +1206,328 @@ export default function App() {
         .replace(/\)/g, "\\)")
         .replace(/\r/g, "");
 
-    const h_box = 65.0;
-    stream.push(`q
-0.06 0.09 0.16 rg
-${margin_x} ${y - h_box} ${content_w} ${h_box} re f
+    const nowStr = new Date().toISOString().replace("T", " ").slice(0, 19) + " UTC";
+    const nowIst = new Date(Date.now() + 5.5 * 3600 * 1000).toISOString().replace("T", " ").slice(0, 19) + " IST";
+
+    const inc_id = sc.incident_id;
+    const severity = sc.severity;
+    const category = sc.step1?.certin_category || "CIAD-2022-04 Unauthorized Access & Fraud";
+    const threat_tactic = sc.threat_tactic;
+    const mitre_id = sc.mitre_id;
+    const direct_inr = Number(sc.direct_exposure_inr || 0);
+    const attacker_ips = sc.attacker_ips || [sc.attacker_ip];
+    const target_assets = sc.target_assets || sc.affected_systems || ["10.14.8.102 (api-gw.bank.internal)"];
+    const comp_creds = sc.compromised_credentials || sc.compromised_user;
+    const payload_hash = sc.payload_hash || "SHA256: 4f98d9e2b4510aa18992cde8710b14ea987b213f";
+    const affected_accounts = sc.step3?.affected_accounts_total || 18;
+    const corp_accounts = sc.step3?.corporate_count || 4;
+    const hni_accounts = sc.step3?.hni_count || 14;
+    const payment_channel = sc.payment_channel || sc.step3?.account_examples || "Core Banking & Inter-Bank Switch";
+    const actions = sc.step4?.actions || [];
+
+    // ---------------- PAGE 1 ----------------
+    const p1: string[] = [];
+    let y1 = h - 30.0;
+
+    const h_header = 70.0;
+    p1.push(`q
+0.04 0.08 0.16 rg
+${margin_x} ${y1 - h_header} ${content_w} ${h_header} re f
 0.01 0.52 0.78 RG 1.5 w
-${margin_x} ${y - h_box} ${content_w} ${h_box} re S
+${margin_x} ${y1 - h_header} ${content_w} ${h_header} re S
+
 1 1 1 rg
 BT
-/F2 13 Tf
-${margin_x + 12} ${y - 24} Td
-(INDIAN COMPUTER EMERGENCY RESPONSE TEAM (CERT-In)) Tj
+/F2 12 Tf
+${margin_x + 12} ${y1 - 20} Td
+(GOVERNMENT OF INDIA | MINISTRY OF ELECTRONICS & INFORMATION TECHNOLOGY) Tj
 ET
+
 0.22 0.74 0.97 rg
 BT
+/F2 13 Tf
+${margin_x + 12} ${y1 - 38} Td
+(INDIAN COMPUTER EMERGENCY RESPONSE TEAM (CERT-In)) Tj
+ET
+
+1 1 1 rg
+BT
 /F2 9.5 Tf
-${margin_x + 12} ${y - 40} Td
+${margin_x + 12} ${y1 - 52} Td
 (CYBER SECURITY INCIDENT REPORTING FORM - ANNEXURE 1) Tj
 ET
-0.58 0.64 0.72 rg
-BT
-/F1 7 Tf
-${margin_x + 12} ${y - 54} Td
-(Mandatory statutory reporting under Section 70B of IT Act 2000 & CERT-In Directions 2022) Tj
-ET
-Q
-`);
-    y -= (h_box + 14);
 
-    const drawSection = (title: string) => {
-      stream.push(`q
-0.01 0.52 0.78 rg
-${margin_x} ${y - 12} 3 12 re f
-0.06 0.09 0.16 rg
+0.6 0.7 0.82 rg
 BT
-/F2 9.5 Tf
-${margin_x + 8} ${y - 10.5} Td
-(${escape(title)}) Tj
+/F1 7.2 Tf
+${margin_x + 12} ${y1 - 64} Td
+(Mandatory statutory reporting under Section 70B of IT Act 2000 & CERT-In Directions F.No. 20\\(3\\)/2022-CERT-In) Tj
+ET
+
+0.85 0.15 0.15 rg
+${w - margin_x - 110} ${y1 - 62} 98 42 re f
+1 1 1 rg
+BT
+/F2 8 Tf
+${w - margin_x - 105} ${y1 - 32} Td
+(6-HOUR STATUTORY SLA) Tj
+/F1 6.5 Tf
+${w - margin_x - 105} ${y1 - 45} Td
+(STATUS: FILED IN TIME) Tj
+/F2 7 Tf
+${w - margin_x - 105} ${y1 - 56} Td
+(LATENCY: 4.2 MINS) Tj
 ET
 Q
 `);
-      y -= 18;
+    y1 -= (h_header + 12);
+
+    const draw_p1_section = (title_text: string) => {
+      p1.push(`q
+0.01 0.52 0.78 rg
+${margin_x} ${y1 - 12} 3 12 re f
+0.06 0.12 0.22 rg
+BT
+/F2 9 Tf
+${margin_x + 8} ${y1 - 10} Td
+(${escape(title_text)}) Tj
+ET
+Q
+`);
+      y1 -= 16;
     };
 
-    const drawField = (label: string, value: any, isHighlight = false) => {
-      stream.push(`q
+    const draw_p1_row = (label: string, val: any, is_hl = false, height = 14.0) => {
+      p1.push(`q
 0.96 0.97 0.99 rg
-${margin_x} ${y - 15} ${content_w} 15 re f
+${margin_x} ${y1 - height} ${content_w} ${height} re f
 0.88 0.91 0.94 RG 0.5 w
-${margin_x} ${y - 15} ${content_w} 15 re S
+${margin_x} ${y1 - height} ${content_w} ${height} re S
 0.3 0.35 0.42 rg
 BT
-/F2 7.5 Tf
-${margin_x + 6} ${y - 11} Td
+/F2 7.2 Tf
+${margin_x + 6} ${y1 - 10} Td
 (${escape(label)}:) Tj
 ET
-${isHighlight ? "0.8 0.1 0.1 rg" : "0.06 0.09 0.16 rg"}
+${is_hl ? '0.8 0.1 0.1 rg' : '0.06 0.09 0.16 rg'}
 BT
-/${isHighlight ? "F2" : "F1"} 7.5 Tf
-${margin_x + 180} ${y - 11} Td
-(${escape(String(value).slice(0, 70))}) Tj
+/${is_hl ? 'F2' : 'F1'} 7.2 Tf
+${margin_x + 160} ${y1 - 10} Td
+(${escape(String(val).slice(0, 85))}) Tj
 ET
 Q
 `);
-      y -= 17;
+      y1 -= (height + 1.5);
     };
 
-    const nowStr = new Date().toISOString().replace("T", " ").slice(0, 19) + " UTC";
+    // Part 1
+    draw_p1_section("PART 1: ORGANISATIONAL PARTICULARS & CISO NODAL CONTACT");
+    draw_p1_row("1.1 Reporting Organisation", "Apex Commercial Bank of India Ltd");
+    draw_p1_row("1.2 Sector / Regulatory Body", "Banking & Financial Services (RBI Supervised Scheduled Commercial Bank)");
+    draw_p1_row("1.3 CISO / Nodal Officer", "Rajeshwar Varma (Chief Information Security Officer)");
+    draw_p1_row("1.4 24x7 SOC Contact", "ciso-office@apexbank.in | soc-hotline@apexbank.in | +91-22-6889-0100");
+    draw_p1_row("1.5 Data Center & Cloud Region", "Primary DC: Navi Mumbai (Tier-IV) | DR: Hyderabad | Cloud: AWS ap-south-1");
+    y1 -= 6;
 
-    drawSection("1. ORGANISATION PARTICULARS & NODAL CONTACT");
-    drawField("Name of Organisation", "Apex Commercial Bank of India Ltd");
-    drawField("Sector / Regulatory Body", "Banking & Financial Services (RBI Supervised)");
-    drawField("CISO Nodal Officer Contact", "ciso-office@apexbank.in | +91-22-6889-0100");
-    drawField("Reporting Reference ID", sc.incident_id);
-    y -= 6;
+    // Part 2
+    draw_p1_section("PART 2: INCIDENT IDENTIFICATION & REGULATORY CLASSIFICATION");
+    draw_p1_row("2.1 Incident Reference Tracking ID", inc_id, true);
+    draw_p1_row("2.2 Detection Timestamp (UTC & IST)", `${nowStr}  /  ${nowIst}`);
+    draw_p1_row("2.3 Statutory CERT-In Category", category, true);
+    draw_p1_row("2.4 Incident Severity & Threat Level", `${severity} (Immediate Escalation to Board Risk Committee)`);
+    draw_p1_row("2.5 MITRE ATT&CK Classification", `${threat_tactic} (${mitre_id})`);
+    draw_p1_row("2.6 Impacted Banking Channel", payment_channel);
+    y1 -= 6;
 
-    drawSection("2. INCIDENT DETECTION & REGULATORY CLASSIFICATION");
-    drawField("Date & Time of Incident Detection", nowStr);
-    drawField("CERT-In Incident Category", sc.step1?.certin_category || "CIAD-2022-04 Unauthorized Access & Fraud");
-    drawField("Regulatory Reporting Window", "Mandatory 6 Hours (CERT-In / RBI Directions)");
-    drawField("MITRE ATT&CK Classification", `${sc.threat_tactic} (${sc.mitre_id})`);
-    drawField("Attacker Source Entity / IP", sc.step2?.discovered_entity || sc.attacker_ip, true);
-    y -= 6;
+    // Part 3
+    draw_p1_section("PART 3: TECHNICAL FORENSICS & INDICATORS OF COMPROMISE (IoCs)");
+    draw_p1_row("3.1 Primary Attacker Source IP(s)", attacker_ips[0] || "198.51.100.44", true);
+    if (attacker_ips.length > 1) {
+      draw_p1_row("3.2 Proxy / Tor / Botnet Relays", attacker_ips.slice(1, 3).join(", "), true);
+    }
+    if (attacker_ips.length > 3) {
+      draw_p1_row("3.3 Additional Correlated IPs", attacker_ips.slice(3, 5).join(", "), true);
+    }
+    draw_p1_row("3.4 Affected Internal Asset(s)", target_assets.slice(0, 2).join(", "));
+    draw_p1_row("3.5 Compromised Credential / Token", comp_creds);
+    draw_p1_row("3.6 Malicious Hash / Payload ID", payload_hash);
+    draw_p1_row("3.7 Autonomous Detection Tool", "VIGIL ES|QL Forensic Correlator (14.2ms Execution Latency)");
 
-    drawSection("3. RUPEE FINANCIAL EXPOSURE & IMPACT ASSESSMENT");
-    const directRisk = Number(sc.direct_exposure_inr || 0);
-    drawField("Direct Financial Risk (INR)", `Rs. ${directRisk.toLocaleString("en-IN")}.00`, directRisk > 0);
-    drawField("Customer Accounts Affected", `${sc.step3?.affected_accounts_total || 18} Accounts (${sc.step3?.corporate_count || 3} Corporate, ${sc.step3?.hni_count || 15} HNI)`);
-    drawField("Payment Channels Impacted", sc.step3?.account_examples || "Core Banking & Inter-Bank Switch");
-    drawField("Core Banking Operational Status", "NORMAL (Unauthorized activity intercepted & neutralized)");
-    y -= 6;
-
-    drawSection("4. REMEDIAL & CONTAINMENT ACTIONS TAKEN");
-    const acts = sc.step4?.actions || [];
-    drawField("Perimeter Firewall Action", acts[0]?.title || "Null-routed malicious ingress IP on edge firewall");
-    drawField("IAM Session Invalidation", acts[1]?.title || "OAuth2 Bearer token revoked & forced password rotation");
-    drawField("Payment Velocity Gate", acts[2]?.title || "Placed debit freeze & suspended anomalous outbound batches");
-    drawField("Cryptographic Evidence Status", "SEALED in SHA-256 Hash Chain Ledger (S3 Object Lock)");
-
-    stream.push(`q
+    p1.push(`q
 0.88 0.91 0.94 RG 0.5 w
-${margin_x} 30 m ${w - margin_x} 30 l S
+${margin_x} 28 m ${w - margin_x} 28 l S
 0.5 0.55 0.65 rg
 BT
 /F1 6.5 Tf
-${margin_x} 20 Td
-(Generated automatically by VIGIL AI Tier-1 SOC Analyst | Sealed under SHA-256 Hash Chain) Tj
-${w - margin_x - 70} 20 Td
-(CERT-In 6-Hour Filing) Tj
+${margin_x} 18 Td
+(VIGIL Autonomous AI SOC Analyst | Certified Statutory Filing for CERT-In & RBI CSIR | Page 1 of 2) Tj
+${w - margin_x - 90} 18 Td
+(Strictly Confidential) Tj
 ET
 Q
 `);
 
-    const pageStream = stream.join("\n");
-    const streamLen = new TextEncoder().encode(pageStream).length;
+    // ---------------- PAGE 2 ----------------
+    const p2: string[] = [];
+    let y2 = h - 30.0;
+
+    const h_header2 = 45.0;
+    p2.push(`q
+0.04 0.08 0.16 rg
+${margin_x} ${y2 - h_header2} ${content_w} ${h_header2} re f
+0.01 0.52 0.78 RG 1.5 w
+${margin_x} ${y2 - h_header2} ${content_w} ${h_header2} re S
+
+1 1 1 rg
+BT
+/F2 10.5 Tf
+${margin_x + 12} ${y2 - 18} Td
+(INDIAN COMPUTER EMERGENCY RESPONSE TEAM (CERT-In) - ANNEXURE 1 CONTINUED) Tj
+ET
+
+0.22 0.74 0.97 rg
+BT
+/F2 8 Tf
+${margin_x + 12} ${y2 - 32} Td
+(INCIDENT REFERENCE: ${escape(inc_id)} | SECTOR: BANKING & FINANCIAL SERVICES) Tj
+ET
+Q
+`);
+    y2 -= (h_header2 + 14);
+
+    const draw_p2_section = (title_text: string) => {
+      p2.push(`q
+0.01 0.52 0.78 rg
+${margin_x} ${y2 - 12} 3 12 re f
+0.06 0.12 0.22 rg
+BT
+/F2 9 Tf
+${margin_x + 8} ${y2 - 10} Td
+(${escape(title_text)}) Tj
+ET
+Q
+`);
+      y2 -= 16;
+    };
+
+    const draw_p2_row = (label: string, val: any, is_hl = false, height = 14.0) => {
+      p2.push(`q
+0.96 0.97 0.99 rg
+${margin_x} ${y2 - height} ${content_w} ${height} re f
+0.88 0.91 0.94 RG 0.5 w
+${margin_x} ${y2 - height} ${content_w} ${height} re S
+0.3 0.35 0.42 rg
+BT
+/F2 7.2 Tf
+${margin_x + 6} ${y2 - 10} Td
+(${escape(label)}:) Tj
+ET
+${is_hl ? '0.8 0.1 0.1 rg' : '0.06 0.09 0.16 rg'}
+BT
+/${is_hl ? 'F2' : 'F1'} 7.2 Tf
+${margin_x + 160} ${y2 - 10} Td
+(${escape(String(val).slice(0, 85))}) Tj
+ET
+Q
+`);
+      y2 -= (height + 1.5);
+    };
+
+    // Part 4
+    draw_p2_section("PART 4: RUPEE FINANCIAL EXPOSURE & IMPACT ASSESSMENT");
+    draw_p2_row("4.1 Direct Rupee Funds at Risk (INR)", `Rs. ${direct_inr.toLocaleString("en-IN")}.00`, direct_inr > 0);
+    draw_p2_row("4.2 Customer Blast Radius Breakdown", `${affected_accounts} Total Accounts (${corp_accounts} Corporate, ${hni_accounts} HNI / Retail)`);
+    draw_p2_row("4.3 Customer PII / Statement Leakage", direct_inr > 0 ? "NO PII EXFILTRATED (Intercepted before batch clearing)" : "Zero Customer PII Exposure");
+    draw_p2_row("4.4 Core Banking & Switch Integrity", "OPERATIONAL (Rogue transactions quarantined in flight)");
+    draw_p2_row("4.5 Business Continuity Status", "Green / Normal (No service disruption to retail banking customers)");
+    y2 -= 8;
+
+    // Part 5
+    draw_p2_section("PART 5: REMEDIAL, CONTAINMENT & ISOLATION ACTIONS EXECUTED");
+    if (actions.length > 0) {
+      actions.slice(0, 4).forEach((act, idx) => {
+        draw_p2_row(`5.${idx + 1} ${act.title}`, `${act.description} [EXECUTED]`, true);
+      });
+    } else {
+      draw_p2_row("5.1 Perimeter Firewall Action", "Null-routed malicious ingress IPs on edge firewall & Cloud WAF [EXECUTED]", true);
+      draw_p2_row("5.2 IAM Session Revocation", "OAuth2 Bearer token revoked & forced password rotation [EXECUTED]", true);
+    }
+    draw_p2_row("5.5 Digital Evidence Preservation", "SEALED in SHA-256 Immutable Audit Ledger & AWS S3 Object Lock (WORM)");
+    draw_p2_row("5.6 Continuous Telemetry Monitoring", "Elastic Cloud live agent polling active (1-minute heartbeat)");
+    y2 -= 8;
+
+    // Part 6
+    draw_p2_section("PART 6: STATUTORY DECLARATION & FORMAL NODAL SIGN-OFF");
+    const dec_box = 85.0;
+    p2.push(`q
+0.97 0.98 1 rg
+${margin_x} ${y2 - dec_box} ${content_w} ${dec_box} re f
+0.82 0.88 0.95 RG 1 w
+${margin_x} ${y2 - dec_box} ${content_w} ${dec_box} re S
+
+0.2 0.25 0.35 rg
+BT
+/F1 6.8 Tf
+${margin_x + 8} ${y2 - 12} Td
+(STATUTORY DECLARATION UNDER SECTION 70B OF IT ACT, 2000 & CERT-In DIRECTIONS 2022:) Tj
+/F1 6.3 Tf
+${margin_x + 8} ${y2 - 24} Td
+(I hereby confirm that this incident notification has been compiled and validated by the VIGIL Autonomous Cyber AI) Tj
+${margin_x + 8} ${y2 - 34} Td
+(Engine in coordination with the CISO Nodal Office. All indicators of compromise, affected IP vectors, financial exposure) Tj
+${margin_x + 8} ${y2 - 44} Td
+(assessments, and remedial containment actions are true and accurate as recorded in the immutable cryptographic ledger.) Tj
+ET
+
+0.05 0.15 0.3 rg
+BT
+/F2 7.2 Tf
+${margin_x + 8} ${y2 - 62} Td
+(Digitally Authorized by:) Tj
+/F2 8 Tf
+${margin_x + 100} ${y2 - 62} Td
+(Rajeshwar Varma | Chief Information Security Officer) Tj
+/F1 6.5 Tf
+${margin_x + 100} ${y2 - 73} Td
+(Apex Commercial Bank of India Ltd | Certified Public Key: 0x8F92..BC10) Tj
+ET
+
+0.8 0.1 0.1 rg
+${w - margin_x - 110} ${y2 - 78} 100 28 re f
+1 1 1 rg
+BT
+/F2 7.5 Tf
+${w - margin_x - 105} ${y2 - 60} Td
+(DIGITALLY SEALED) Tj
+/F1 6 Tf
+${w - margin_x - 105} ${y2 - 72} Td
+(SHA-256 HASH VERIFIED) Tj
+ET
+Q
+`);
+
+    p2.push(`q
+0.88 0.91 0.94 RG 0.5 w
+${margin_x} 28 m ${w - margin_x} 28 l S
+0.5 0.55 0.65 rg
+BT
+/F1 6.5 Tf
+${margin_x} 18 Td
+(VIGIL Autonomous AI SOC Analyst | Certified Statutory Filing for CERT-In & RBI CSIR | Page 2 of 2) Tj
+${w - margin_x - 90} 18 Td
+(Strictly Confidential) Tj
+ET
+Q
+`);
+
+    const page1_stream = p1.join("\n");
+    const page2_stream = p2.join("\n");
+    const len1 = new TextEncoder().encode(page1_stream).length;
+    const len2 = new TextEncoder().encode(page2_stream).length;
 
     const objs = [
       `<< /Type /Catalog /Pages 2 0 R >>`,
-      `<< /Type /Pages /Kids [3 0 R] /Count 1 >>`,
+      `<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >>`,
       `<< /Type /Page /Parent 2 0 R
 /MediaBox [0 0 ${w} ${h}]
 /Resources <<
@@ -1325,8 +1536,18 @@ Q
     /F2 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
   >>
 >>
-/Contents 4 0 R >>`,
-      `<< /Length ${streamLen} >>\nstream\n${pageStream}\nendstream`
+/Contents 5 0 R >>`,
+      `<< /Type /Page /Parent 2 0 R
+/MediaBox [0 0 ${w} ${h}]
+/Resources <<
+  /Font <<
+    /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+    /F2 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+  >>
+>>
+/Contents 6 0 R >>`,
+      `<< /Length ${len1} >>\nstream\n${page1_stream}\nendstream`,
+      `<< /Length ${len2} >>\nstream\n${page2_stream}\nendstream`
     ];
 
     let pdfStr = "%PDF-1.4\n%\xE2\xE3\xCF\xD3\n";
@@ -1379,14 +1600,7 @@ Q
     document.body.removeChild(a);
   };
 
-  const handleCopyReport = () => {
-    const reportText = `CERT-In Report Ref: ${selectedIncId} | Bank: Apex Commercial Bank | Loss: Rs. ${currentScenario.direct_exposure_inr.toLocaleString("en-IN")} | Status: Contained & Sealed`;
-    navigator.clipboard.writeText(reportText);
-    setCopiedNotification(true);
-    setTimeout(() => setCopiedNotification(false), 2000);
-  };
-
-  const handleLanguageChange = async (lang: string) => {
+  const handleTranslate = async (lang: string) => {
     setSelectedLang(lang);
     setIsTranslating(true);
     try {
@@ -1401,7 +1615,7 @@ Q
       } else {
         throw new Error("Use local translation");
       }
-    } catch (e) {
+    } catch {
       setTranslatedText(currentScenario.indic[lang] || currentScenario.indic["hi"]);
     } finally {
       setIsTranslating(false);
@@ -1410,18 +1624,39 @@ Q
 
   const isDark = theme === "dark";
 
+  // Filtered Scenarios for Hub View
+  const filteredScenarios = scenarios.filter(s => {
+    const matchesSearch = s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          s.incident_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          s.threat_tactic.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          s.attacker_ip.includes(searchQuery);
+    const matchesSeverity = severityFilter === "ALL" || s.severity === severityFilter;
+    return matchesSearch && matchesSeverity;
+  });
+
+  const totalRiskINR = scenarios.reduce((acc, s) => acc + s.direct_exposure_inr, 0);
+  const criticalCount = scenarios.filter(s => s.severity === "CRITICAL").length;
+  const highCount = scenarios.filter(s => s.severity === "HIGH").length;
+  const fpCount = scenarios.filter(s => !s.is_material).length;
+
+  const navigateToDetail = (incId: string) => {
+    setSelectedIncId(incId);
+    setCurrentStep(1);
+    setIsApproved(false);
+    setViewMode("detail");
+  };
+
   return (
     <div className={`min-h-screen flex flex-col font-sans transition-colors duration-300 ${
       isDark ? "bg-[#0B1120] text-slate-100" : "bg-[#F8FAFC] text-slate-900"
     }`}>
-      
-      {/* 1. TOP HEADER BAR */}
+      {/* Top Application Header */}
       <header className={`h-16 border-b px-6 flex items-center justify-between sticky top-0 z-50 backdrop-blur-md transition-colors ${
         isDark ? "bg-[#0F172A]/90 border-slate-800" : "bg-white/90 border-slate-200 shadow-sm"
       }`}>
         <div className="flex items-center gap-3">
           <button 
-            onClick={() => setViewMode("hub")}
+            onClick={() => setViewMode("hub")} 
             className="flex items-center gap-2.5 text-left cursor-pointer group"
           >
             <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-sky-600 via-sky-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-sky-500/20 group-hover:scale-105 transition-transform">
@@ -1436,16 +1671,13 @@ Q
                   AI SOC ANALYST
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400 font-medium">
-                Autonomous Security Operations for Indian BFSI
-              </p>
+              <p className="text-[11px] text-slate-400 font-medium">Autonomous Security Operations for Indian BFSI</p>
             </div>
           </button>
 
-          {/* Breadcrumb / Mode Indicator */}
           {viewMode === "detail" && (
             <div className="hidden sm:flex items-center gap-2 ml-4 pl-4 border-l border-slate-700">
-              <button
+              <button 
                 onClick={() => setViewMode("hub")}
                 className="text-xs font-bold text-slate-400 hover:text-sky-400 flex items-center gap-1.5 transition-colors cursor-pointer"
               >
@@ -1458,17 +1690,17 @@ Q
           )}
         </div>
 
-        {/* Right Action Cluster */}
+        {/* Global Action & Status Strip */}
         <div className="flex items-center gap-2.5">
-          {/* View Mode Switcher */}
+          {/* View Toggle */}
           <div className={`p-1 rounded-xl border flex items-center gap-1 ${
             isDark ? "bg-slate-900 border-slate-800" : "bg-slate-100 border-slate-200"
           }`}>
             <button
               onClick={() => setViewMode("hub")}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                viewMode === "hub"
-                  ? (isDark ? "bg-sky-500 text-white shadow-md shadow-sky-500/30" : "bg-white text-sky-700 shadow-sm")
+                viewMode === "hub" 
+                  ? isDark ? "bg-sky-500 text-white shadow-md shadow-sky-500/30" : "bg-white text-sky-700 shadow-sm"
                   : "text-slate-400 hover:text-slate-200"
               }`}
             >
@@ -1478,18 +1710,18 @@ Q
             <button
               onClick={() => setViewMode("detail")}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                viewMode === "detail"
-                  ? (isDark ? "bg-sky-500 text-white shadow-md shadow-sky-500/30" : "bg-white text-sky-700 shadow-sm")
+                viewMode === "detail" 
+                  ? isDark ? "bg-sky-500 text-white shadow-md shadow-sky-500/30" : "bg-white text-sky-700 shadow-sm"
                   : "text-slate-400 hover:text-slate-200"
               }`}
             >
-              <Activity className="h-3.5 w-3.5" />
+              <Terminal className="h-3.5 w-3.5" />
               <span>Investigation Cockpit</span>
             </button>
           </div>
 
-          {/* SOC Escalation / Webhooks Modal Trigger */}
-          <button
+          {/* Quick Incident Escalation CTA */}
+          <button 
             onClick={() => setShowEscalateModal(true)}
             className={`flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-lg border transition-all cursor-pointer ${
               isDark 
@@ -1502,10 +1734,13 @@ Q
             <span className="hidden sm:inline">Escalate</span>
           </button>
 
-          {/* Elastic Cloud Live Badge */}
-          <div className={`hidden md:flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg border font-medium ${
-            isDark ? "bg-slate-800/80 border-slate-700 text-slate-300" : "bg-slate-100 border-slate-200 text-slate-700"
-          }`} title={backendOnline ? "Backend & Elastic Cloud Cluster Connected" : "Connecting to backend..."}>
+          {/* Elastic Cloud Cluster Status */}
+          <div 
+            className={`hidden md:flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg border font-medium ${
+              isDark ? "bg-slate-800/80 border-slate-700 text-slate-300" : "bg-slate-100 border-slate-200 text-slate-700"
+            }`}
+            title={backendOnline ? "Backend & Elastic Cloud Cluster Connected" : "Connecting to backend..."}
+          >
             <span className={`h-2 w-2 rounded-full ${backendOnline ? "bg-emerald-400 animate-pulse shadow-sm" : "bg-amber-400"}`} />
             <Database className="h-3.5 w-3.5 text-sky-500" />
             <span>Elastic Cloud</span>
@@ -1514,13 +1749,11 @@ Q
             </span>
           </div>
 
-          {/* Theme Toggle Button (Dark / Light) */}
-          <button
+          {/* Theme Toggle */}
+          <button 
             onClick={() => setTheme(isDark ? "light" : "dark")}
             className={`p-2 rounded-lg border transition-all cursor-pointer flex items-center justify-center ${
-              isDark 
-                ? "bg-slate-800/80 border-slate-700 text-amber-300 hover:bg-slate-700" 
-                : "bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200"
+              isDark ? "bg-slate-800/80 border-slate-700 text-amber-300 hover:bg-slate-700" : "bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200"
             }`}
             title={`Switch to ${isDark ? "Light" : "Dark"} Mode`}
           >
@@ -1540,12 +1773,11 @@ Q
       </header>
 
       {/* ========================================================================= */}
-      {/* VIEW MODE 1: MASTER USE CASES & INCIDENT DISCOVERY HUB                    */}
+      {/* VIEW 1: USE CASES HUB (Incident Discovery & Scenario Dashboard) */}
       {/* ========================================================================= */}
       {viewMode === "hub" && (
         <main className="flex-1 p-6 max-w-7xl mx-auto w-full space-y-6">
-          
-          {/* Executive Overview Banner & Stats */}
+          {/* Executive Overview Banner */}
           <div className={`p-6 rounded-2xl border relative overflow-hidden ${
             isDark 
               ? "bg-gradient-to-br from-slate-900 via-[#0F172A] to-slate-950 border-slate-800 shadow-xl" 
@@ -1555,18 +1787,15 @@ Q
               <div>
                 <div className="flex items-center gap-2">
                   <ShieldAlert className="h-6 w-6 text-sky-500" />
-                  <h1 className="text-xl font-black tracking-tight">
-                    Banking Threat Discovery & Incident Response Hub
-                  </h1>
+                  <h1 className="text-xl font-black tracking-tight">Banking Threat Discovery & Incident Response Hub</h1>
                 </div>
                 <p className={`text-xs mt-1 max-w-3xl ${isDark ? "text-slate-400" : "text-slate-600"}`}>
                   Real-time threat detection across Elastic Cloud (AWS ap-south-1). Select any active banking incident to launch the autonomous 6-step triage, forensic blast radius analysis, and statutory CERT-In Annexure-1 compliance workflow.
                 </p>
               </div>
-
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => handleSelectScenario(SCENARIOS_DATA[0].incident_id)}
+                  onClick={() => navigateToDetail(scenarios[0].incident_id)}
                   className="bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl flex items-center gap-2 shadow-lg shadow-sky-600/30 transition-all cursor-pointer"
                 >
                   <Play className="h-4 w-4" />
@@ -1575,61 +1804,44 @@ Q
               </div>
             </div>
 
-            {/* Top 4 KPI Metric Strips */}
+            {/* Top Aggregate Risk Metrics */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
-              <div className={`p-4 rounded-xl border ${
-                isDark ? "bg-slate-950/60 border-slate-800" : "bg-white border-slate-200 shadow-sm"
-              }`}>
+              <div className={`p-4 rounded-xl border ${isDark ? "bg-slate-950/60 border-slate-800" : "bg-white border-slate-200 shadow-sm"}`}>
                 <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Rupee Risk at Stake</div>
-                <div className="text-2xl font-black font-mono text-emerald-500 mt-1">
-                  ₹ {(totalRupeeRisk / 10000000).toFixed(2)} Cr
-                </div>
-                <div className="text-[10px] text-slate-400 mt-0.5">Across {SCENARIOS_DATA.length} Banking Scenarios</div>
+                <div className="text-2xl font-black font-mono text-emerald-500 mt-1">₹ {(totalRiskINR / 10000000).toFixed(2)} Cr</div>
+                <div className="text-[10px] text-slate-400 mt-0.5">Across {scenarios.length} Banking Scenarios</div>
               </div>
 
-              <div className={`p-4 rounded-xl border ${
-                isDark ? "bg-slate-950/60 border-slate-800" : "bg-white border-slate-200 shadow-sm"
-              }`}>
+              <div className={`p-4 rounded-xl border ${isDark ? "bg-slate-950/60 border-slate-800" : "bg-white border-slate-200 shadow-sm"}`}>
                 <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Critical Breaches</div>
-                <div className="text-2xl font-black font-mono text-red-500 mt-1">
-                  {totalCritical} Active
-                </div>
+                <div className="text-2xl font-black font-mono text-red-500 mt-1">{criticalCount} Active</div>
                 <div className="text-[10px] text-red-400/80 mt-0.5">Mandatory 6-Hr CERT-In Filing</div>
               </div>
 
-              <div className={`p-4 rounded-xl border ${
-                isDark ? "bg-slate-950/60 border-slate-800" : "bg-white border-slate-200 shadow-sm"
-              }`}>
+              <div className={`p-4 rounded-xl border ${isDark ? "bg-slate-950/60 border-slate-800" : "bg-white border-slate-200 shadow-sm"}`}>
                 <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">High-Risk Incidents</div>
-                <div className="text-2xl font-black font-mono text-amber-500 mt-1">
-                  {totalHigh} Active
-                </div>
+                <div className="text-2xl font-black font-mono text-amber-500 mt-1">{highCount} Active</div>
                 <div className="text-[10px] text-amber-400/80 mt-0.5">Automated Containment Ready</div>
               </div>
 
-              <div className={`p-4 rounded-xl border ${
-                isDark ? "bg-slate-950/60 border-slate-800" : "bg-white border-slate-200 shadow-sm"
-              }`}>
+              <div className={`p-4 rounded-xl border ${isDark ? "bg-slate-950/60 border-slate-800" : "bg-white border-slate-200 shadow-sm"}`}>
                 <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">False Positive Suppression</div>
-                <div className="text-2xl font-black font-mono text-sky-400 mt-1">
-                  {totalSuppressed} Verified
-                </div>
+                <div className="text-2xl font-black font-mono text-sky-400 mt-1">{fpCount} Verified</div>
                 <div className="text-[10px] text-sky-400/80 mt-0.5">Pre-Approved Maintenance Cron</div>
               </div>
             </div>
           </div>
 
-          {/* Search, Filter & Scenarios Grid */}
+          {/* Search, Filter Bar & Use Cases Grid */}
           <div className="space-y-4">
             <div className="flex flex-col md:flex-row items-center justify-between gap-3">
-              {/* Search Bar */}
               <div className="relative w-full md:w-96">
                 <Search className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
                 <input
                   type="text"
                   placeholder="Search use cases by keyword, IP, tactic, user..."
-                  value={searchFilter}
-                  onChange={(e) => setSearchFilter(e.target.value)}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   className={`w-full pl-10 pr-4 py-2 rounded-xl text-xs border transition-colors outline-none font-medium ${
                     isDark 
                       ? "bg-slate-900 border-slate-800 text-slate-100 placeholder-slate-500 focus:border-sky-500" 
@@ -1638,7 +1850,6 @@ Q
                 />
               </div>
 
-              {/* Severity Filter Pills */}
               <div className="flex items-center gap-1.5 self-start md:self-auto">
                 {["ALL", "CRITICAL", "HIGH", "LOW"].map((sev) => (
                   <button
@@ -1647,7 +1858,9 @@ Q
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                       severityFilter === sev
                         ? "bg-sky-600 text-white shadow"
-                        : (isDark ? "bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200" : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50")
+                        : isDark
+                        ? "bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200"
+                        : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
                     }`}
                   >
                     {sev === "ALL" ? "All Scenarios" : sev}
@@ -1656,22 +1869,25 @@ Q
               </div>
             </div>
 
-            {/* 8 Scenarios Cards Grid */}
+            {/* 8 Use Cases Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredScenarios.map((sc) => {
                 const isSelected = selectedIncId === sc.incident_id;
                 return (
                   <div
                     key={sc.incident_id}
-                    onClick={() => handleSelectScenario(sc.incident_id)}
+                    onClick={() => navigateToDetail(sc.incident_id)}
                     className={`p-5 rounded-2xl border transition-all text-left flex flex-col justify-between cursor-pointer group hover:scale-[1.01] ${
                       isSelected
-                        ? (isDark ? "bg-slate-900/90 border-sky-500 ring-2 ring-sky-500/30 shadow-xl" : "bg-sky-50/50 border-sky-400 ring-2 ring-sky-300 shadow-md")
-                        : (isDark ? "bg-[#0F172A] border-slate-800/80 hover:border-slate-700" : "bg-white border-slate-200 hover:border-slate-300 shadow-sm")
+                        ? isDark 
+                          ? "bg-slate-900/90 border-sky-500 ring-2 ring-sky-500/30 shadow-xl" 
+                          : "bg-sky-50/50 border-sky-400 ring-2 ring-sky-300 shadow-md"
+                        : isDark
+                        ? "bg-[#0F172A] border-slate-800/80 hover:border-slate-700"
+                        : "bg-white border-slate-200 hover:border-slate-300 shadow-sm"
                     }`}
                   >
                     <div>
-                      {/* Top Badges */}
                       <div className="flex items-center justify-between gap-2 mb-3">
                         <div className="flex items-center gap-2">
                           <span className="font-mono text-xs font-bold text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded border border-sky-500/20">
@@ -1687,25 +1903,21 @@ Q
                             {sc.severity}
                           </span>
                         </div>
-
-                        <span className={`text-[10px] font-bold ${
-                          sc.is_material ? "text-amber-500" : "text-emerald-400"
-                        }`}>
+                        <span className={`text-[10px] font-bold ${sc.is_material ? "text-amber-500" : "text-emerald-400"}`}>
                           {sc.is_material ? "Mandatory 6-Hr" : "Benign FP"}
                         </span>
                       </div>
 
-                      {/* Title & Description */}
                       <h3 className={`font-bold text-sm leading-snug group-hover:text-sky-400 transition-colors ${
                         isDark ? "text-slate-100" : "text-slate-900"
                       }`}>
                         {sc.title}
                       </h3>
+
                       <p className={`text-xs mt-2 line-clamp-2 ${isDark ? "text-slate-400" : "text-slate-600"}`}>
                         {sc.impact_summary}
                       </p>
 
-                      {/* Key Indicators Strip */}
                       <div className={`mt-4 p-3 rounded-xl border space-y-1.5 text-xs ${
                         isDark ? "bg-slate-950/60 border-slate-800" : "bg-slate-50 border-slate-200/80"
                       }`}>
@@ -1717,23 +1929,26 @@ Q
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-slate-400">Threat Tactic:</span>
-                          <span className="font-mono text-sky-400 text-[11px] truncate max-w-[170px]">{sc.threat_tactic}</span>
+                          <span className="font-mono text-sky-400 text-[11px] truncate max-w-[170px]">
+                            {sc.threat_tactic}
+                          </span>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-slate-400">Threat IP:</span>
-                          <span className="font-mono text-slate-300 text-[11px]">{sc.attacker_ip}</span>
+                          <span className="text-slate-400">Primary IP:</span>
+                          <span className="font-mono text-slate-300 text-[11px]">
+                            {sc.attacker_ip}
+                          </span>
                         </div>
                       </div>
                     </div>
 
-                    {/* Bottom CTA */}
                     <div className="mt-5 pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
                       <span className="text-[11px] text-slate-400 font-mono">
                         Tool: {sc.current_step}/6 Complete
                       </span>
                       <button className="text-xs font-bold text-sky-500 group-hover:text-sky-400 flex items-center gap-1 transition-transform group-hover:translate-x-1">
-                        <span>Investigate Incident</span>
-                        <ArrowRight className="h-3.5 w-3.5" />
+                        <span>Investigate Scenario</span>
+                        <ChevronRight className="h-3.5 w-3.5" />
                       </button>
                     </div>
                   </div>
@@ -1741,17 +1956,15 @@ Q
               })}
             </div>
           </div>
-
         </main>
       )}
 
       {/* ========================================================================= */}
-      {/* VIEW MODE 2: DETAILED INCIDENT INVESTIGATION COCKPIT                       */}
+      {/* VIEW 2: DETAILED INCIDENT INVESTIGATION COCKPIT */}
       {/* ========================================================================= */}
       {viewMode === "detail" && (
         <div className="flex-1 flex flex-col">
-          
-          {/* Incident Context Header */}
+          {/* Sub-Header Breadcrumb & Navigation */}
           <div className={`border-b px-6 py-3.5 flex flex-col md:flex-row md:items-center justify-between gap-3 ${
             isDark ? "bg-slate-900/80 border-slate-800" : "bg-white border-slate-200"
           }`}>
@@ -1763,7 +1976,6 @@ Q
                 <ArrowLeft className="h-3.5 w-3.5" />
                 <span>All Use Cases</span>
               </button>
-
               <div>
                 <div className="flex items-center gap-2">
                   <span className="font-mono text-xs font-bold text-sky-400">{currentScenario.incident_id}</span>
@@ -1781,38 +1993,37 @@ Q
               </div>
             </div>
 
-            {/* Quick Switch Dropdown & Countdown */}
             <div className="flex items-center gap-3">
+              {/* Scenario Quick-Switcher */}
               <select
                 value={selectedIncId}
-                onChange={(e) => handleSelectScenario(e.target.value)}
+                onChange={(e) => navigateToDetail(e.target.value)}
                 className={`text-xs font-medium px-3 py-1.5 rounded-xl border outline-none cursor-pointer ${
                   isDark ? "bg-slate-950 border-slate-800 text-slate-200" : "bg-slate-50 border-slate-200 text-slate-800"
                 }`}
               >
-                {SCENARIOS_DATA.map((s) => (
-                  <option key={s.incident_id} value={s.incident_id}>
-                    {s.incident_id}: {s.title.slice(0, 40)}...
+                {scenarios.map((sc) => (
+                  <option key={sc.incident_id} value={sc.incident_id}>
+                    {sc.incident_id}: {sc.title.slice(0, 40)}...
                   </option>
                 ))}
               </select>
 
+              {/* 6-Hour SLA Clock */}
               {currentScenario.is_material && (
                 <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-amber-500 bg-amber-500/10 px-3 py-1.5 rounded-xl border border-amber-500/20">
                   <Clock className="h-3.5 w-3.5 animate-pulse" />
-                  <span>{formatCountdown(secondsRemaining)}</span>
+                  <span>{formatSla(slaSeconds)}</span>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Main 2-Column Cockpit */}
+          {/* Cockpit Main Body */}
           <div className="flex-1 flex flex-col lg:flex-row p-6 gap-6 max-w-[1600px] mx-auto w-full">
-            
-            {/* Left Column: Business Risk & Incident Selector */}
+            {/* Left Column: Quick Scenario Stream & Summary */}
             <div className="w-full lg:w-4/12 flex flex-col gap-5">
-              
-              {/* Financial Risk Summary Card */}
+              {/* Business Rupee Exposure Box */}
               <div className={`border rounded-2xl p-5 text-left relative overflow-hidden transition-colors ${
                 isDark ? "bg-[#0F172A] border-slate-800" : "bg-white border-slate-200 shadow-sm"
               }`}>
@@ -1825,13 +2036,14 @@ Q
                     bank.exposure.lookup
                   </span>
                 </div>
-
                 <div className="mt-3">
                   <div className="text-3xl font-black font-mono tracking-tight text-emerald-400">
                     ₹ {currentScenario.direct_exposure_inr.toLocaleString("en-IN")}.00
                   </div>
                   <p className="text-xs text-slate-400 mt-1">
-                    {currentScenario.is_material ? "Direct funds at risk in pending transaction queue." : "Zero financial exposure. Routine operation."}
+                    {currentScenario.is_material 
+                      ? "Direct funds at risk in pending transaction queue." 
+                      : "Zero financial exposure. Routine operation."}
                   </p>
                 </div>
 
@@ -1858,49 +2070,57 @@ Q
                 </div>
               </div>
 
-              {/* Triage Stream List */}
+              {/* Scenarios Stream List */}
               <div className={`border rounded-2xl p-5 flex-1 flex flex-col text-left transition-colors ${
                 isDark ? "bg-[#0F172A] border-slate-800" : "bg-white border-slate-200 shadow-sm"
               }`}>
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider">
-                    <Radio className="h-4 w-4 text-sky-400" />
+                    <Activity className="h-4 w-4 text-sky-400" />
                     <span>Attack Triage Stream</span>
                   </div>
                   <span className="text-[10px] font-mono font-bold text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded">
-                    {SCENARIOS_DATA.length} Scenarios
+                    {scenarios.length} Scenarios
                   </span>
                 </div>
 
                 <div className="space-y-2.5 overflow-y-auto max-h-[480px] pr-1">
-                  {SCENARIOS_DATA.map((s) => {
-                    const isSelected = selectedIncId === s.incident_id;
+                  {scenarios.map((sc) => {
+                    const isSelected = selectedIncId === sc.incident_id;
                     return (
                       <button
-                        key={s.incident_id}
-                        onClick={() => handleSelectScenario(s.incident_id)}
+                        key={sc.incident_id}
+                        onClick={() => navigateToDetail(sc.incident_id)}
                         className={`w-full p-3 rounded-xl border text-left transition-all cursor-pointer ${
                           isSelected
-                            ? (isDark ? "bg-slate-900 border-sky-500 ring-1 ring-sky-500/40 shadow-md" : "bg-sky-50 border-sky-400 ring-1 ring-sky-300 shadow-sm")
-                            : (isDark ? "bg-slate-950/60 border-slate-800/80 hover:border-slate-700" : "bg-slate-50 border-slate-200 hover:border-slate-300")
+                            ? isDark 
+                              ? "bg-slate-900 border-sky-500 ring-1 ring-sky-500/40 shadow-md" 
+                              : "bg-sky-50 border-sky-400 ring-1 ring-sky-300 shadow-sm"
+                            : isDark
+                            ? "bg-slate-950/60 border-slate-800/80 hover:border-slate-700"
+                            : "bg-slate-50 border-slate-200 hover:border-slate-300"
                         }`}
                       >
                         <div className="flex items-center justify-between">
-                          <span className="font-mono text-xs font-bold text-sky-400">{s.incident_id}</span>
+                          <span className="font-mono text-xs font-bold text-sky-400">{sc.incident_id}</span>
                           <span className={`text-[10px] px-2 py-0.2 rounded font-mono font-bold uppercase ${
-                            s.severity === "CRITICAL" ? "text-red-400 bg-red-500/10" : s.severity === "HIGH" ? "text-amber-400 bg-amber-500/10" : "text-emerald-400 bg-emerald-500/10"
+                            sc.severity === "CRITICAL"
+                              ? "text-red-400 bg-red-500/10"
+                              : sc.severity === "HIGH"
+                              ? "text-amber-400 bg-amber-500/10"
+                              : "text-emerald-400 bg-emerald-500/10"
                           }`}>
-                            {s.severity}
+                            {sc.severity}
                           </span>
                         </div>
-                        <div className="font-bold text-xs mt-1 truncate">{s.title}</div>
+                        <div className="font-bold text-xs mt-1 truncate">{sc.title}</div>
                         <div className="flex items-center justify-between text-[11px] text-slate-400 mt-2">
                           <span className="flex items-center gap-1">
                             <Clock className="h-3 w-3" />
-                            {s.is_material ? "Mandatory 6-Hr" : "Benign FP"}
+                            {sc.is_material ? "Mandatory 6-Hr" : "Benign FP"}
                           </span>
                           <span className="font-mono text-emerald-400 font-bold">
-                            ₹ {s.direct_exposure_inr.toLocaleString("en-IN")}
+                            ₹ {sc.direct_exposure_inr.toLocaleString("en-IN")}
                           </span>
                         </div>
                       </button>
@@ -1908,13 +2128,11 @@ Q
                   })}
                 </div>
               </div>
-
             </div>
 
-            {/* Right Column: 10 Investigation Tabs */}
+            {/* Right Column: Deep Forensic & Investigation Tabs */}
             <div className="w-full lg:w-8/12 flex flex-col gap-4">
-              
-              {/* Tab Navigation Bar */}
+              {/* Tab Navigation */}
               <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2 overflow-x-auto gap-2">
                 <div className="flex items-center gap-1.5">
                   {[
@@ -1923,26 +2141,30 @@ Q
                     { id: "timeline", label: "Forensic Timeline", icon: ListTree },
                     { id: "mitre", label: "MITRE ATT&CK", icon: Compass },
                     { id: "customers", label: "Blast Accounts", icon: Users },
-                    { id: "telemetry", label: "Live Telemetry", icon: Radio },
+                    { id: "telemetry", label: "Live Telemetry", icon: Activity },
                     { id: "esql", label: "ES|QL Copilot", icon: Terminal },
                     { id: "certin", label: "CERT-In Form", icon: FileText },
                     { id: "indic", label: "Sarvam Indic", icon: Globe },
                     { id: "ledger", label: "SHA-256 Ledger", icon: Lock }
-                  ].map((t) => {
-                    const Icon = t.icon;
-                    const isActive = activeTab === t.id;
+                  ].map((tab) => {
+                    const Icon = tab.icon;
+                    const isActive = activeTab === tab.id;
                     return (
                       <button
-                        key={t.id}
-                        onClick={() => setActiveTab(t.id as any)}
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id)}
                         className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                           isActive
-                            ? (isDark ? "bg-sky-500 text-white shadow-md shadow-sky-500/20" : "bg-sky-600 text-white shadow-sm")
-                            : (isDark ? "text-slate-400 hover:text-slate-200 hover:bg-slate-900" : "text-slate-600 hover:text-slate-900 hover:bg-slate-100")
+                            ? isDark
+                              ? "bg-sky-500 text-white shadow-md shadow-sky-500/20"
+                              : "bg-sky-600 text-white shadow-sm"
+                            : isDark
+                            ? "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
+                            : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
                         }`}
                       >
                         <Icon className="h-3.5 w-3.5" />
-                        <span>{t.label}</span>
+                        <span>{tab.label}</span>
                       </button>
                     );
                   })}
@@ -1950,23 +2172,22 @@ Q
 
                 {activeTab === "workflow" && (
                   <button
-                    onClick={handleAutoRun}
-                    disabled={isRunning}
+                    onClick={handleRunAllSteps}
+                    disabled={isExecuting}
                     className="flex items-center gap-1.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-1.5 rounded-xl shadow transition-all disabled:opacity-50 cursor-pointer flex-shrink-0"
                   >
-                    <RefreshCw className={`h-3.5 w-3.5 ${isRunning ? "animate-spin" : ""}`} />
-                    <span>{isRunning ? "Running..." : "Auto-Run All"}</span>
+                    <RefreshCw className={`h-3.5 w-3.5 ${isExecuting ? "animate-spin" : ""}`} />
+                    <span>{isExecuting ? "Running..." : "Auto-Run All"}</span>
                   </button>
                 )}
               </div>
 
-              {/* TAB 1: 6-STEP AGENTIC WORKFLOW */}
+              {/* TAB 1: 6-STEP AGENTIC PIPELINE */}
               {activeTab === "workflow" && (
                 <div className={`border rounded-2xl p-5 flex flex-col gap-5 text-left transition-colors ${
                   isDark ? "bg-[#0F172A] border-slate-800" : "bg-white border-slate-200 shadow-sm"
                 }`}>
-                  
-                  {/* Stepper Bar */}
+                  {/* Step Buttons */}
                   <div className="grid grid-cols-6 gap-2">
                     {[
                       { num: 1, label: "1. Materiality", desc: "RBI Check" },
@@ -1975,44 +2196,42 @@ Q
                       { num: 4, label: "4. Containment", desc: "HITL Gate" },
                       { num: 5, label: "5. CERT-In", desc: "Annexure-1" },
                       { num: 6, label: "6. Ledger", desc: "SHA-256 Seal" }
-                    ].map((s) => (
+                    ].map((st) => (
                       <button
-                        key={s.num}
-                        onClick={() => setActiveStep(s.num)}
+                        key={st.num}
+                        onClick={() => setCurrentStep(st.num)}
                         className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
-                          activeStep === s.num
+                          currentStep === st.num
                             ? "bg-sky-500/20 border-sky-500 text-sky-500 shadow-sm ring-1 ring-sky-500/40 font-bold"
-                            : activeStep > s.num
-                            ? (isDark ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-400" : "bg-emerald-50 border-emerald-200 text-emerald-700")
-                            : (isDark ? "bg-slate-900 border-slate-800 text-slate-500" : "bg-slate-50 border-slate-200 text-slate-400")
+                            : currentStep > st.num
+                            ? isDark ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-400" : "bg-emerald-50 border-emerald-200 text-emerald-700"
+                            : isDark ? "bg-slate-900 border-slate-800 text-slate-500" : "bg-slate-50 border-slate-200 text-slate-400"
                         }`}
                       >
                         <div className="text-xs font-bold flex items-center justify-between">
-                          <span>{s.label}</span>
-                          {activeStep > s.num && <CheckCircle className="h-3 w-3 text-emerald-500" />}
+                          <span>{st.label}</span>
+                          {currentStep > st.num && <CheckCircle2 className="h-3 w-3 text-emerald-500" />}
                         </div>
-                        <div className="text-[10px] opacity-75 mt-0.5">{s.desc}</div>
+                        <div className="text-[10px] opacity-75 mt-0.5">{st.desc}</div>
                       </button>
                     ))}
                   </div>
 
-                  {/* Active Step Detailed Content View */}
+                  {/* Active Step Content */}
                   <div className={`border rounded-2xl p-5 text-left transition-colors ${
                     isDark ? "bg-slate-950/70 border-slate-800" : "bg-slate-50/70 border-slate-200"
                   }`}>
-                    
-                    {/* STEP 1: MATERIALITY */}
-                    {activeStep === 1 && (
+                    {currentStep === 1 && (
                       <div>
                         <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
                           <div className="font-bold text-sm text-sky-500 flex items-center gap-2">
-                            <FileCheck className="h-4 w-4" />
+                            <Shield className="h-4 w-4" />
                             Step 1: Incident Classification & RBI Materiality Check
                           </div>
                           <span className={`text-xs px-2.5 py-0.5 rounded-full font-mono font-bold ${
                             currentScenario.is_material 
-                              ? (isDark ? "bg-red-500/20 text-red-400 border border-red-500/30" : "bg-red-100 text-red-700 border border-red-200")
-                              : (isDark ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "bg-emerald-100 text-emerald-700 border border-emerald-200")
+                              ? isDark ? "bg-red-500/20 text-red-400 border border-red-500/30" : "bg-red-100 text-red-700 border border-red-200"
+                              : isDark ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "bg-emerald-100 text-emerald-700 border border-emerald-200"
                           }`}>
                             {currentScenario.is_material ? "Status: Material Regulatory Breach" : "Status: Benign False Positive"}
                           </span>
@@ -2027,12 +2246,11 @@ Q
                       </div>
                     )}
 
-                    {/* STEP 2: ES|QL EVIDENCE */}
-                    {activeStep === 2 && (
+                    {currentStep === 2 && (
                       <div className="space-y-4">
                         <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
                           <div className="font-bold text-sm text-amber-500 flex items-center gap-2">
-                            <Zap className="h-4 w-4" />
+                            <Terminal className="h-4 w-4" />
                             Step 2: Autonomous ES|QL Threat Hunt & Forensic Evidence
                           </div>
                           <span className={`text-xs px-2.5 py-0.5 rounded-full font-mono font-bold ${
@@ -2042,10 +2260,9 @@ Q
                           </span>
                         </div>
 
-                        {/* Stage 1 Box */}
                         <div className={`p-4 rounded-xl border ${isDark ? "bg-slate-900/90 border-amber-500/30" : "bg-amber-50/70 border-amber-200"}`}>
                           <div className="font-bold text-xs text-amber-500 flex items-center gap-2 mb-1.5">
-                            <Zap className="h-3.5 w-3.5" />
+                            <Terminal className="h-3.5 w-3.5" />
                             {currentScenario.step2.autonomous_detection_title}
                           </div>
                           <div className={`p-3 rounded-lg font-mono text-xs border whitespace-pre-line ${
@@ -2058,10 +2275,9 @@ Q
                           </p>
                         </div>
 
-                        {/* Stage 2 Box */}
                         <div className={`p-4 rounded-xl border ${isDark ? "bg-slate-900/60 border-slate-800" : "bg-white border-slate-200"}`}>
                           <div className="font-bold text-xs text-sky-500 flex items-center gap-2 mb-1.5">
-                            <Filter className="h-3.5 w-3.5" />
+                            <Database className="h-3.5 w-3.5" />
                             {currentScenario.step2.forensic_blast_radius_title}
                           </div>
                           <div className={`p-3 rounded-lg font-mono text-xs border whitespace-pre-line ${
@@ -2077,8 +2293,7 @@ Q
                       </div>
                     )}
 
-                    {/* STEP 3: FINANCIAL EXPOSURE */}
-                    {activeStep === 3 && (
+                    {currentStep === 3 && (
                       <div>
                         <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
                           <div className="font-bold text-sm text-emerald-500 flex items-center gap-2">
@@ -2101,8 +2316,7 @@ Q
                       </div>
                     )}
 
-                    {/* STEP 4: CONTAINMENT & HITL GATE */}
-                    {activeStep === 4 && (
+                    {currentStep === 4 && (
                       <div>
                         <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
                           <div className="font-bold text-sm text-amber-500 flex items-center gap-2">
@@ -2110,20 +2324,21 @@ Q
                             Step 4: Containment Action Authorization (Human-in-the-Loop Gate)
                           </div>
                           <span className={`text-xs px-2.5 py-0.5 rounded-full font-mono font-bold ${
-                            containmentApproved 
-                              ? (isDark ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "bg-emerald-100 text-emerald-700 border border-emerald-200")
-                              : (isDark ? "bg-amber-500/20 text-amber-400 border border-amber-500/30" : "bg-amber-100 text-amber-700 border border-amber-200")
+                            isApproved
+                              ? isDark ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "bg-emerald-100 text-emerald-700 border border-emerald-200"
+                              : isDark ? "bg-amber-500/20 text-amber-400 border border-amber-500/30" : "bg-amber-100 text-amber-700 border border-amber-200"
                           }`}>
-                            {containmentApproved ? "APPROVED & SEALED" : "PENDING ANALYST SIGN-OFF"}
+                            {isApproved ? "APPROVED & SEALED" : "PENDING ANALYST SIGN-OFF"}
                           </span>
                         </div>
+
                         <div className="mt-4 space-y-3.5 text-xs">
                           <div className="space-y-2">
                             {currentScenario.step4.actions.map((act, i) => (
                               <div key={i} className={`flex items-start gap-2.5 p-3 rounded-xl border transition-colors ${
                                 isDark ? "bg-slate-900/60 border-slate-800" : "bg-white border-slate-200 shadow-sm"
                               }`}>
-                                <CheckCircle2 className={`h-4 w-4 mt-0.5 flex-shrink-0 ${containmentApproved ? "text-emerald-500" : "text-slate-400"}`} />
+                                <CheckCircle2 className={`h-4 w-4 mt-0.5 flex-shrink-0 ${isApproved ? "text-emerald-500" : "text-slate-400"}`} />
                                 <div>
                                   <div className={`font-bold ${isDark ? "text-slate-200" : "text-slate-800"}`}>{act.title}</div>
                                   <div className={`text-[11px] mt-0.5 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
@@ -2134,7 +2349,14 @@ Q
                             ))}
                           </div>
 
-                          {!containmentApproved ? (
+                          {isApproved ? (
+                            <div className={`p-3 rounded-xl border text-xs font-semibold flex items-center gap-2 ${
+                              isDark ? "bg-emerald-950/40 border-emerald-500/30 text-emerald-400" : "bg-emerald-50 border-emerald-200 text-emerald-800"
+                            }`}>
+                              <Check className="h-4 w-4 flex-shrink-0 text-emerald-500" />
+                              <span>{currentScenario.step4.containment_success_msg}</span>
+                            </div>
+                          ) : (
                             <div className="pt-2 flex items-center gap-3">
                               <button
                                 onClick={handleApproveContainment}
@@ -2144,20 +2366,12 @@ Q
                                 <span>1-Click Authorize & Execute Containment</span>
                               </button>
                             </div>
-                          ) : (
-                            <div className={`p-3 rounded-xl border text-xs font-semibold flex items-center gap-2 ${
-                              isDark ? "bg-emerald-950/40 border-emerald-500/30 text-emerald-400" : "bg-emerald-50 border-emerald-200 text-emerald-800"
-                            }`}>
-                              <Check className="h-4 w-4 flex-shrink-0 text-emerald-500" />
-                              <span>{currentScenario.step4.containment_success_msg}</span>
-                            </div>
                           )}
                         </div>
                       </div>
                     )}
 
-                    {/* STEP 5: CERT-In REPORT */}
-                    {activeStep === 5 && (
+                    {currentStep === 5 && (
                       <div>
                         <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
                           <div className="font-bold text-sm text-sky-500 flex items-center gap-2">
@@ -2176,7 +2390,7 @@ Q
                           <p>• <strong>Affected Infrastructure</strong>: {currentScenario.step5.affected_systems}</p>
                           <p>• <strong>Remediation Status</strong>: {currentScenario.step5.remedial_summary}</p>
                           <div className="pt-2 flex items-center gap-3">
-                            <button 
+                            <button
                               onClick={() => setActiveTab("certin")}
                               className="text-xs font-bold text-sky-500 hover:text-sky-600 underline cursor-pointer"
                             >
@@ -2187,8 +2401,7 @@ Q
                       </div>
                     )}
 
-                    {/* STEP 6: SHA-256 LEDGER */}
-                    {activeStep === 6 && (
+                    {currentStep === 6 && (
                       <div>
                         <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
                           <div className="font-bold text-sm text-purple-500 flex items-center gap-2">
@@ -2206,7 +2419,7 @@ Q
                           <p>• <strong>Incident Block Reference</strong>: <code className="text-purple-500 font-mono font-bold">{selectedIncId}-SEALED-BLOCK-105</code></p>
                           <p>• <strong>Audit Defensibility</strong>: 100% Tamper-evident proof guaranteed for RBI Cyber Security inspection.</p>
                           <div className="pt-2">
-                            <button 
+                            <button
                               onClick={() => setActiveTab("ledger")}
                               className="text-xs font-bold text-purple-500 hover:text-purple-600 underline cursor-pointer"
                             >
@@ -2216,13 +2429,11 @@ Q
                         </div>
                       </div>
                     )}
-
                   </div>
-
                 </div>
               )}
 
-              {/* TAB 2: INTERACTIVE ATTACK TOPOLOGY GRAPH */}
+              {/* TAB 2: ATTACK TOPOLOGY */}
               {activeTab === "topology" && (
                 <div className={`border rounded-2xl p-5 flex flex-col gap-4 text-left transition-colors ${
                   isDark ? "bg-[#0F172A] border-slate-800" : "bg-white border-slate-200 shadow-sm"
@@ -2243,16 +2454,18 @@ Q
                     {currentScenario.topology.map((node) => (
                       <div
                         key={node.id}
-                        onClick={() => setSelectedTopologyNode(node)}
+                        onClick={() => setSelectedNode(node)}
                         className={`p-4 rounded-xl border text-left cursor-pointer transition-all ${
-                          selectedTopologyNode?.id === node.id
-                            ? (isDark ? "bg-slate-900 border-sky-400 ring-2 ring-sky-500/30" : "bg-sky-50 border-sky-500 ring-2 ring-sky-200")
-                            : (isDark ? "bg-slate-950/70 border-slate-800 hover:border-slate-700" : "bg-slate-50 border-slate-200 hover:border-slate-300")
+                          selectedNode?.id === node.id
+                            ? isDark ? "bg-slate-900 border-sky-400 ring-2 ring-sky-500/30" : "bg-sky-50 border-sky-500 ring-2 ring-sky-200"
+                            : isDark ? "bg-slate-950/70 border-slate-800 hover:border-slate-700" : "bg-slate-50 border-slate-200 hover:border-slate-300"
                         }`}
                       >
                         <div className="flex items-center justify-between">
                           <span className={`text-[10px] font-mono px-2 py-0.5 rounded font-bold uppercase ${
-                            node.type === "ATTACKER" ? "bg-red-500/20 text-red-400" : node.type === "TARGET" ? "bg-amber-500/20 text-amber-400" : "bg-sky-500/20 text-sky-400"
+                            node.type === "ATTACKER" ? "bg-red-500/20 text-red-400" :
+                            node.type === "TARGET" ? "bg-amber-500/20 text-amber-400" :
+                            "bg-sky-500/20 text-sky-400"
                           }`}>
                             {node.type}
                           </span>
@@ -2264,16 +2477,18 @@ Q
                     ))}
                   </div>
 
-                  {selectedTopologyNode && (
-                    <div className={`p-4 rounded-xl border text-xs space-y-1.5 ${isDark ? "bg-slate-950 border-sky-500/40 text-slate-300" : "bg-sky-50/50 border-sky-200 text-slate-700"}`}>
+                  {selectedNode && (
+                    <div className={`p-4 rounded-xl border text-xs space-y-1.5 ${
+                      isDark ? "bg-slate-950 border-sky-500/40 text-slate-300" : "bg-sky-50/50 border-sky-200 text-slate-700"
+                    }`}>
                       <div className="font-bold text-sky-500 flex items-center justify-between">
-                        <span>Node Details: {selectedTopologyNode.label}</span>
-                        <button onClick={() => setSelectedTopologyNode(null)} className="text-slate-400 hover:text-slate-200">✕</button>
+                        <span>Node Details: {selectedNode.label}</span>
+                        <button onClick={() => setSelectedNode(null)} className="text-slate-400 hover:text-slate-200">✕</button>
                       </div>
-                      <p>• <strong>IP Address</strong>: <code className="font-mono">{selectedTopologyNode.ip}</code> ({selectedTopologyNode.geo})</p>
-                      <p>• <strong>Protocol</strong>: {selectedTopologyNode.protocol}</p>
-                      <p>• <strong>MITRE ATT&CK Mapping</strong>: <span className="font-mono text-amber-500 font-bold">{selectedTopologyNode.mitre_tag}</span></p>
-                      <p>• <strong>Forensic Details</strong>: {selectedTopologyNode.details}</p>
+                      <p>• <strong>IP Address</strong>: <code className="font-mono">{selectedNode.ip}</code> ({selectedNode.geo})</p>
+                      <p>• <strong>Protocol</strong>: {selectedNode.protocol}</p>
+                      <p>• <strong>MITRE ATT&CK Mapping</strong>: <span className="font-mono text-amber-500 font-bold">{selectedNode.mitre_tag}</span></p>
+                      <p>• <strong>Forensic Details</strong>: {selectedNode.details}</p>
                     </div>
                   )}
                 </div>
@@ -2295,23 +2510,24 @@ Q
                   </div>
 
                   <div className="space-y-3 relative pl-4 border-l-2 border-slate-700 my-2">
-                    {currentScenario.timeline.map((ev, i) => (
+                    {currentScenario.timeline.map((event, i) => (
                       <div key={i} className="relative group">
                         <div className={`absolute -left-[23px] top-1.5 h-3.5 w-3.5 rounded-full border-2 ${
-                          ev.severity === "CRITICAL" ? "bg-red-500 border-slate-900" : ev.severity === "HIGH" ? "bg-amber-500 border-slate-900" : "bg-sky-500 border-slate-900"
+                          event.severity === "CRITICAL" ? "bg-red-500 border-slate-900" :
+                          event.severity === "HIGH" ? "bg-amber-500 border-slate-900" : "bg-sky-500 border-slate-900"
                         }`} />
                         <div className={`p-3.5 rounded-xl border text-xs transition-all ${
                           isDark ? "bg-slate-950/70 border-slate-800" : "bg-slate-50 border-slate-200"
                         }`}>
                           <div className="flex items-center justify-between gap-2">
-                            <span className="font-bold text-xs">{ev.title}</span>
-                            <span className="font-mono text-[11px] text-slate-400">{ev.time} ({ev.offset})</span>
+                            <span className="font-bold text-xs">{event.title}</span>
+                            <span className="font-mono text-[11px] text-slate-400">{event.time} ({event.offset})</span>
                           </div>
-                          <p className={`mt-1.5 ${isDark ? "text-slate-300" : "text-slate-600"}`}>{ev.description}</p>
+                          <p className={`mt-1.5 ${isDark ? "text-slate-300" : "text-slate-600"}`}>{event.description}</p>
                           <div className="mt-2 flex items-center justify-between">
-                            <span className="font-mono text-[10px] text-sky-400">Tactic: {ev.tactic}</span>
+                            <span className="font-mono text-[10px] text-sky-400">Tactic: {event.tactic}</span>
                             <button
-                              onClick={() => setRawEcsModalData(ev.raw_ecs)}
+                              onClick={() => setInspectingEcs(event.raw_ecs)}
                               className="text-[10px] font-bold text-indigo-400 hover:text-indigo-300 underline"
                             >
                               Inspect Raw ECS Payload →
@@ -2341,20 +2557,20 @@ Q
                       { tactic: "TA0001 Initial Access", technique: currentScenario.mitre_id, desc: "Exploitation of public facing gateway / credential stuffing." },
                       { tactic: "TA0008 Lateral Movement", technique: "T1557 MITM / Token Pivot", desc: "Internal propagation across core banking switches." },
                       { tactic: "TA0040 Impact", technique: "T1565.001 Account Tampering", desc: "Unauthorized transaction velocity limit manipulation." }
-                    ].map((m, i) => (
+                    ].map((item, i) => (
                       <div key={i} className={`p-4 rounded-xl border text-left text-xs space-y-1.5 ${
                         isDark ? "bg-slate-950/70 border-slate-800" : "bg-slate-50 border-slate-200"
                       }`}>
-                        <div className="font-bold text-amber-500">{m.tactic}</div>
-                        <div className="font-mono font-semibold text-sky-400 text-xs">{m.technique}</div>
-                        <p className={`text-[11px] ${isDark ? "text-slate-400" : "text-slate-600"}`}>{m.desc}</p>
+                        <div className="font-bold text-amber-500">{item.tactic}</div>
+                        <div className="font-mono font-semibold text-sky-400 text-xs">{item.technique}</div>
+                        <p className={`text-[11px] ${isDark ? "text-slate-400" : "text-slate-600"}`}>{item.desc}</p>
                       </div>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* TAB 5: BLAST ACCOUNTS */}
+              {/* TAB 5: BLAST RADIUS ACCOUNTS */}
               {activeTab === "customers" && (
                 <div className={`border rounded-2xl p-5 flex flex-col gap-4 text-left transition-colors ${
                   isDark ? "bg-[#0F172A] border-slate-800" : "bg-white border-slate-200 shadow-sm"
@@ -2385,9 +2601,17 @@ Q
                           <tr key={i} className="hover:bg-slate-900/40 transition-colors">
                             <td className="py-2.5 font-mono text-sky-400 font-bold">{acc.account_id}</td>
                             <td className="py-2.5 font-bold">{acc.name}</td>
-                            <td className="py-2.5"><span className="text-[10px] px-2 py-0.5 rounded bg-sky-500/10 text-sky-400 font-mono">{acc.tier}</span></td>
+                            <td className="py-2.5">
+                              <span className="text-[10px] px-2 py-0.5 rounded bg-sky-500/10 text-sky-400 font-mono">
+                                {acc.tier}
+                              </span>
+                            </td>
                             <td className="py-2.5 font-mono text-emerald-400 font-bold">₹ {acc.exposed_inr.toLocaleString("en-IN")}</td>
-                            <td className="py-2.5"><span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-mono font-bold">{acc.status}</span></td>
+                            <td className="py-2.5">
+                              <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-mono font-bold">
+                                {acc.status}
+                              </span>
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -2403,26 +2627,28 @@ Q
                 }`}>
                   <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
                     <div className="flex items-center gap-2 text-sm font-bold text-sky-500">
-                      <Radio className="h-4 w-4 animate-pulse" />
+                      <Activity className="h-4 w-4 animate-pulse" />
                       Live Indian BFSI Simulated Telemetry Stream
                     </div>
                   </div>
 
                   <div className="space-y-2 overflow-y-auto max-h-[350px]">
-                    {liveLogs.map((log) => (
-                      <div key={log.id} className={`p-3 rounded-xl border flex items-center justify-between text-xs font-mono ${
+                    {liveEvents.map((evt) => (
+                      <div key={evt.id} className={`p-3 rounded-xl border flex items-center justify-between text-xs font-mono ${
                         isDark ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-200"
                       }`}>
                         <div className="flex items-center gap-2">
-                          <span className="text-sky-400 font-bold">{log.id}</span>
-                          <span className="text-slate-400">• {log.channel}</span>
-                          <span className="text-slate-500">({log.ip})</span>
+                          <span className="text-sky-400 font-bold">{evt.id}</span>
+                          <span className="text-slate-400">• {evt.channel}</span>
+                          <span className="text-slate-500">({evt.ip})</span>
                         </div>
                         <div className="flex items-center gap-3">
-                          <span className="text-emerald-400 font-bold">₹ {log.amt.toLocaleString("en-IN")}</span>
+                          <span className="text-emerald-400 font-bold">₹ {evt.amt.toLocaleString("en-IN")}</span>
                           <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${
-                            log.status === "BLOCKED" ? "bg-red-500/20 text-red-400" : "bg-emerald-500/20 text-emerald-400"
-                          }`}>{log.status}</span>
+                            evt.status === "BLOCKED" ? "bg-red-500/20 text-red-400" : "bg-emerald-500/20 text-emerald-400"
+                          }`}>
+                            {evt.status}
+                          </span>
                         </div>
                       </div>
                     ))}
@@ -2442,21 +2668,23 @@ Q
                     </div>
                   </div>
 
-                  {/* Preset Questions */}
+                  {/* Pre-built Queries */}
                   <div className="space-y-1.5">
                     <div className="text-xs font-bold text-slate-400">Pre-Configured AI Threat Hunting Queries:</div>
-                    {currentScenario.copilot_prompts.map((cp, i) => (
+                    {currentScenario.copilot_prompts.map((p, i) => (
                       <button
                         key={i}
                         onClick={() => {
-                          setEsqlQuery(cp.esql_query);
-                          handleRunEsql();
+                          setEsqlInput(p.esql_query);
+                          handleExecuteEsql();
                         }}
                         className={`w-full p-2.5 rounded-xl border text-left text-xs transition-colors cursor-pointer ${
-                          isDark ? "bg-slate-950 border-slate-800 hover:border-amber-500/50 text-slate-200" : "bg-slate-50 border-slate-200 hover:border-amber-400 text-slate-800"
+                          isDark 
+                            ? "bg-slate-950 border-slate-800 hover:border-amber-500/50 text-slate-200" 
+                            : "bg-slate-50 border-slate-200 hover:border-amber-400 text-slate-800"
                         }`}
                       >
-                        <div className="font-semibold text-amber-400">"{cp.question}"</div>
+                        <div className="font-semibold text-amber-400">"{p.question}"</div>
                       </button>
                     ))}
                   </div>
@@ -2465,15 +2693,15 @@ Q
                   <div className="space-y-2 pt-2">
                     <textarea
                       rows={4}
-                      value={esqlQuery}
-                      onChange={(e) => setEsqlQuery(e.target.value)}
+                      value={esqlInput}
+                      onChange={(e) => setEsqlInput(e.target.value)}
                       className={`w-full p-3 rounded-xl font-mono text-xs border outline-none ${
                         isDark ? "bg-slate-950 border-slate-800 text-amber-300" : "bg-slate-50 border-slate-200 text-amber-900"
                       }`}
                     />
                     <div className="flex items-center justify-between">
                       <button
-                        onClick={handleRunEsql}
+                        onClick={handleExecuteEsql}
                         disabled={isQuerying}
                         className="bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-2 shadow cursor-pointer"
                       >
@@ -2509,7 +2737,7 @@ Q
                 </div>
               )}
 
-              {/* TAB 8: CERT-In FORM */}
+              {/* TAB 8: CERT-In FORM (COMPREHENSIVE OFFICIAL ANNEXURE 1 VIEW) */}
               {activeTab === "certin" && (
                 <div className={`border rounded-2xl p-5 flex flex-col gap-4 text-left transition-colors ${
                   isDark ? "bg-[#0F172A] border-slate-800" : "bg-white border-slate-200 shadow-sm"
@@ -2518,10 +2746,10 @@ Q
                     <div>
                       <div className="flex items-center gap-2 text-sm font-bold text-sky-500">
                         <FileText className="h-4 w-4" />
-                        CERT-In Annexure-1 Statutory Incident Reporting Form
+                        Official CERT-In Annexure-1 Statutory Incident Reporting Form
                       </div>
                       <p className={`text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-                        Mandatory 6-Hour Filing under IT Act 2000 Section 70B
+                        Mandatory Statutory Reporting under Section 70B of IT Act 2000 & CERT-In Directions 2022
                       </p>
                     </div>
                     <button
@@ -2529,25 +2757,75 @@ Q
                       className="bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow transition-all cursor-pointer"
                     >
                       <Download className="h-3.5 w-3.5" />
-                      <span>Download PDF</span>
+                      <span>Download 2-Page PDF</span>
                     </button>
                   </div>
 
-                  <div className={`p-4 rounded-xl border font-mono text-xs space-y-2 whitespace-pre-wrap ${
+                  <div className={`p-5 rounded-xl border font-mono text-xs space-y-4 ${
                     isDark ? "bg-slate-950 border-slate-800 text-slate-300" : "bg-slate-50 border-slate-200 text-slate-800"
                   }`}>
-                    <div className="font-bold text-sky-400">INDIAN COMPUTER EMERGENCY RESPONSE TEAM (CERT-In)</div>
-                    <div>INCIDENT REPORTING FORM - ANNEXURE 1</div>
-                    <div className="text-slate-500">------------------------------------------------------------</div>
-                    <div>1. Name of Organisation: Apex Commercial Bank of India Ltd (BFSI)</div>
-                    <div>2. Date & Time of Incident: {new Date().toUTCString()}</div>
-                    <div>3. Incident Ref ID: {currentScenario.incident_id}</div>
-                    <div>4. Nature of Incident: {currentScenario.threat_tactic} ({currentScenario.title})</div>
-                    <div>5. Primary Threat Source IP: {currentScenario.attacker_ip}</div>
-                    <div>6. Direct Financial Risk: Rs. {currentScenario.direct_exposure_inr.toLocaleString("en-IN")}.00</div>
-                    <div>7. Accounts Impacted: {currentScenario.step3.affected_accounts_total} Accounts</div>
-                    <div>8. Remedial Actions: {currentScenario.step4.actions[0]?.title}, {currentScenario.step4.actions[1]?.title}</div>
-                    <div>9. Cryptographic Evidence: Sealed under SHA-256 Hash Chain (AWS S3 WORM)</div>
+                    <div className="border-b border-slate-800 pb-2">
+                      <div className="font-bold text-sky-400 text-sm">INDIAN COMPUTER EMERGENCY RESPONSE TEAM (CERT-In)</div>
+                      <div className="text-slate-400 text-xs">CYBER SECURITY INCIDENT REPORTING FORM - ANNEXURE 1</div>
+                      <div className="text-[10px] text-amber-500 mt-0.5">Mandatory statutory filing within 6 hours of incident detection</div>
+                    </div>
+
+                    {/* Part 1 */}
+                    <div className="space-y-1">
+                      <div className="font-bold text-sky-400">PART 1: ORGANISATIONAL PARTICULARS & CISO NODAL CONTACT</div>
+                      <div>• Name of Organisation: Apex Commercial Bank of India Ltd</div>
+                      <div>• Sector / Regulatory Body: Banking & Financial Services (RBI Supervised)</div>
+                      <div>• CISO / Nodal Officer: Rajeshwar Varma | ciso-office@apexbank.in | +91-22-6889-0100</div>
+                      <div>• Primary DC Location: Navi Mumbai Tier-IV | Cloud: AWS ap-south-1</div>
+                    </div>
+
+                    {/* Part 2 */}
+                    <div className="space-y-1 pt-2 border-t border-slate-800">
+                      <div className="font-bold text-sky-400">PART 2: INCIDENT IDENTIFICATION & CLASSIFICATION</div>
+                      <div>• Incident Reference ID: <span className="text-amber-400 font-bold">{currentScenario.incident_id}</span></div>
+                      <div>• Detection Timestamp: {new Date().toUTCString()} (Filed in 4.2 mins)</div>
+                      <div>• CERT-In Incident Category: <span className="text-red-400 font-bold">{currentScenario.step1.certin_category}</span></div>
+                      <div>• MITRE ATT&CK Mapping: {currentScenario.threat_tactic} ({currentScenario.mitre_id})</div>
+                    </div>
+
+                    {/* Part 3 */}
+                    <div className="space-y-1 pt-2 border-t border-slate-800">
+                      <div className="font-bold text-sky-400">PART 3: TECHNICAL FORENSICS & INDICATORS OF COMPROMISE (IoCs)</div>
+                      <div>• Primary Attacker Source IP: <span className="text-red-400 font-bold">{currentScenario.attacker_ip}</span></div>
+                      <div>• Attacker / Botnet Relays: {currentScenario.attacker_ips ? currentScenario.attacker_ips.join(", ") : currentScenario.attacker_ip}</div>
+                      <div>• Target Assets & Gateways: {currentScenario.target_assets ? currentScenario.target_assets.join(", ") : currentScenario.affected_systems.join(", ")}</div>
+                      <div>• Compromised Key / Role: {currentScenario.compromised_credentials || currentScenario.compromised_user}</div>
+                      <div>• Cryptographic Hash ID: {currentScenario.payload_hash || "SHA256: 4f98d9e2b4510aa18992cde8710b14ea987b213f"}</div>
+                    </div>
+
+                    {/* Part 4 */}
+                    <div className="space-y-1 pt-2 border-t border-slate-800">
+                      <div className="font-bold text-sky-400">PART 4: RUPEE FINANCIAL EXPOSURE & BLAST RADIUS</div>
+                      <div>• Direct Financial Risk: <span className="text-emerald-400 font-bold">₹ {currentScenario.direct_exposure_inr.toLocaleString("en-IN")}.00</span></div>
+                      <div>• Impacted Banking Channel: {currentScenario.payment_channel || currentScenario.step3.account_examples}</div>
+                      <div>• Accounts in Blast Radius: {currentScenario.step3.affected_accounts_total} Accounts ({currentScenario.step3.corporate_count} Corporate, {currentScenario.step3.hni_count} HNI)</div>
+                      <div>• Core Banking System Integrity: NORMAL (Contained in-flight; 0 unauthorized debits)</div>
+                    </div>
+
+                    {/* Part 5 */}
+                    <div className="space-y-1 pt-2 border-t border-slate-800">
+                      <div className="font-bold text-sky-400">PART 5: REMEDIAL, CONTAINMENT & ISOLATION ACTIONS EXECUTED</div>
+                      {currentScenario.step4.actions.map((act, i) => (
+                        <div key={i}>• 5.{i+1} {act.title}: {act.description} <span className="text-emerald-400">[EXECUTED]</span></div>
+                      ))}
+                      <div>• 5.5 Digital Evidence Locker: Sealed in SHA-256 Ledger & S3 Object Lock (WORM)</div>
+                    </div>
+
+                    {/* Part 6 */}
+                    <div className="space-y-1 pt-2 border-t border-slate-800">
+                      <div className="font-bold text-sky-400">PART 6: STATUTORY DECLARATION & FORMAL NODAL SIGN-OFF</div>
+                      <div className="text-[11px] text-slate-400">
+                        "Submitted in strict compliance with Section 70B of IT Act 2000 & CERT-In Directions 2022. Certified and cryptographically signed by VIGIL AI SOC & CISO Nodal Office."
+                      </div>
+                      <div className="text-xs font-bold text-slate-200 mt-1">
+                        Digitally Authorized: Rajeshwar Varma | Chief Information Security Officer (Apex Bank)
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -2564,32 +2842,37 @@ Q
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 overflow-x-auto pb-1">
                     {[
                       { code: "hi", label: "हिन्दी (Hindi)" },
                       { code: "mr", label: "मराठी (Marathi)" },
+                      { code: "gu", label: "ગુજરાતી (Gujarati)" },
                       { code: "ta", label: "தமிழ் (Tamil)" },
                       { code: "te", label: "తెలుగు (Telugu)" },
-                      { code: "bn", label: "বাংলা (Bengali)" }
-                    ].map((lang) => (
+                      { code: "bn", label: "বাংলা (Bengali)" },
+                      { code: "kn", label: "ಕನ್ನಡ (Kannada)" },
+                      { code: "ml", label: "മലയാളം (Malayalam)" },
+                      { code: "pa", label: "ਪੰਜਾਬੀ (Punjabi)" },
+                      { code: "od", label: "ଓଡ଼ିଆ (Odia)" }
+                    ].map((l) => (
                       <button
-                        key={lang.code}
-                        onClick={() => handleLanguageChange(lang.code)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                          selectedLang === lang.code
+                        key={l.code}
+                        onClick={() => handleTranslate(l.code)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                          selectedLang === l.code
                             ? "bg-sky-600 text-white shadow"
-                            : (isDark ? "bg-slate-900 border border-slate-800 text-slate-400" : "bg-slate-100 border border-slate-200 text-slate-700")
+                            : isDark ? "bg-slate-950 border border-slate-800 text-slate-400 hover:text-slate-200" : "bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100"
                         }`}
                       >
-                        {lang.label}
+                        {l.label}
                       </button>
                     ))}
                   </div>
 
-                  <div className={`p-4 rounded-xl border text-xs leading-relaxed whitespace-pre-wrap ${
-                    isDark ? "bg-slate-950 border-slate-800 text-slate-200" : "bg-slate-50 border-slate-200 text-slate-800"
+                  <div className={`p-4 rounded-xl border text-sm font-medium leading-relaxed ${
+                    isDark ? "bg-slate-950 border-slate-800 text-sky-200" : "bg-sky-50/60 border-sky-200 text-slate-800"
                   }`}>
-                    {translatedText || currentScenario.indic[selectedLang] || currentScenario.indic["hi"]}
+                    {isTranslating ? "Translating using Sarvam AI..." : translatedText}
                   </div>
                 </div>
               )}
@@ -2602,117 +2885,96 @@ Q
                   <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
                     <div className="flex items-center gap-2 text-sm font-bold text-purple-500">
                       <Lock className="h-4 w-4" />
-                      Cryptographic Evidence Ledger (SHA-256 Merkle Chain)
+                      Immutable SHA-256 Forensic Audit Chain
                     </div>
-                    <span className="text-[10px] px-2 py-0.5 rounded font-mono font-bold bg-purple-500/20 text-purple-400 border border-purple-500/30">
-                      AWS S3 Object Lock (WORM)
-                    </span>
+                    <span className="text-xs font-mono font-bold text-purple-400">AWS S3 WORM Sealed</span>
                   </div>
 
-                  <div className="space-y-2.5 overflow-y-auto max-h-[350px]">
-                    {[
-                      { block: 101, step: "ALERT_ZERO_DISCOVERY_TRIGGER", hash: "0x7a3f89e219ba482c3d4e5f6a...", prev: "0x000000000000000000000000..." },
-                      { block: 102, step: "ESQL_EVIDENCE_GATHERED", hash: "0x9c4172f8812e99a1b2c3d4e5...", prev: "0x7a3f89e219ba482c3d4e5f6a..." },
-                      { block: 103, step: "FINANCIAL_EXPOSURE_QUANTIFIED", hash: "0x1f8e99b247012caa3d4e5f6a...", prev: "0x9c4172f8812e99a1b2c3d4e5..." },
-                      { block: 104, step: "HUMAN_CONTAINMENT_APPROVED", hash: "0x3d2b881729ec55104e5f6a7b...", prev: "0x1f8e99b247012caa3d4e5f6a..." },
-                      { block: 105, step: "CERT_IN_ANNEXURE1_SEALED", hash: currentScenario.step6.sha256_hash.slice(0, 26) + "...", prev: "0x3d2b881729ec55104e5f6a7b..." }
-                    ].map((b) => (
-                      <div key={b.block} className={`p-3.5 rounded-xl border flex items-center justify-between text-xs font-mono ${
-                        isDark ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-200"
-                      }`}>
-                        <div>
-                          <div className="flex items-center gap-2 font-bold">
-                            <span className="text-purple-400">Block #{b.block}</span>
-                            <span>• {b.step}</span>
-                          </div>
-                          <div className="text-[11px] text-slate-500 mt-1">Prev Hash: {b.prev}</div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-sky-400 font-bold">Hash: {b.hash}</div>
-                          <div className="text-[10px] text-emerald-400 mt-0.5">WORM Locked in ap-south-1</div>
-                        </div>
-                      </div>
-                    ))}
+                  <div className={`p-4 rounded-xl border font-mono text-xs space-y-2.5 ${
+                    isDark ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-200"
+                  }`}>
+                    <div>
+                      <span className="text-slate-400">Block Reference:</span>{" "}
+                      <span className="text-purple-400 font-bold">{selectedIncId}-SEALED-BLOCK-105</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400">Current Block Hash:</span>{" "}
+                      <span className="text-sky-400 break-all">{currentScenario.step6.block_hash}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400">Previous Block Hash:</span>{" "}
+                      <span className="text-slate-500 break-all">{currentScenario.step6.prev_hash}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400">Merkle Root Hash:</span>{" "}
+                      <span className="text-emerald-400 break-all">{currentScenario.step6.merkle_root}</span>
+                    </div>
                   </div>
                 </div>
               )}
-
             </div>
-
           </div>
         </div>
       )}
 
-      {/* MODAL 1: SOC ESCALATION WEBHOOKS */}
-      {showEscalateModal && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className={`w-full max-w-lg rounded-2xl border p-6 text-left space-y-4 ${
-            isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-900 shadow-2xl"
+      {/* RAW ECS INSPECT MODAL */}
+      {inspectingEcs && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className={`max-w-2xl w-full rounded-2xl border p-6 shadow-2xl text-left ${
+            isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"
           }`}>
-            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
-              <div className="flex items-center gap-2 font-bold text-sm">
-                <Send className="h-4 w-4 text-purple-500" />
-                <span>Dispatch SOC Escalation Webhook</span>
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div className="font-bold text-sm text-sky-400 flex items-center gap-2">
+                <Code2 className="h-4 w-4" />
+                Raw Elastic Common Schema (ECS) Payload
               </div>
-              <button onClick={() => setShowEscalateModal(false)} className="text-slate-400 hover:text-slate-200">✕</button>
-            </div>
-
-            <div className="space-y-3 text-xs">
-              <div>
-                <label className="text-slate-400 font-bold block mb-1">Slack Channel:</label>
-                <input readOnly value={currentScenario.escalation.slack_channel} className={`w-full p-2 rounded-lg border font-mono ${isDark ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-200"}`} />
-              </div>
-              <div>
-                <label className="text-slate-400 font-bold block mb-1">PagerDuty Urgency:</label>
-                <input readOnly value={currentScenario.escalation.pagerduty_urgency} className={`w-full p-2 rounded-lg border font-mono font-bold text-red-400 ${isDark ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-200"}`} />
-              </div>
-              <div>
-                <label className="text-slate-400 font-bold block mb-1">Jira Ticket Summary:</label>
-                <textarea readOnly rows={2} value={currentScenario.escalation.jira_summary} className={`w-full p-2 rounded-lg border font-mono ${isDark ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-200"}`} />
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200 dark:border-slate-800">
-              <button onClick={() => setShowEscalateModal(false)} className="px-3 py-1.5 rounded-lg border text-xs font-bold">Cancel</button>
-              <button
-                onClick={() => {
-                  alert(`Escalation payload dispatched to ${currentScenario.escalation.slack_channel} & PagerDuty successfully!`);
-                  setShowEscalateModal(false);
-                }}
-                className="bg-purple-600 hover:bg-purple-500 text-white px-4 py-1.5 rounded-lg text-xs font-bold shadow"
-              >
-                Dispatch Webhook
+              <button onClick={() => setInspectingEcs(null)} className="text-slate-400 hover:text-slate-200">
+                <X className="h-4 w-4" />
               </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL 2: RAW ECS PAYLOAD VIEWER */}
-      {rawEcsModalData && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className={`w-full max-w-lg rounded-2xl border p-6 text-left space-y-4 ${
-            isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-900 shadow-2xl"
-          }`}>
-            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
-              <div className="flex items-center gap-2 font-bold text-sm text-sky-400 font-mono">
-                <Code2 className="h-4 w-4" />
-                <span>Raw ECS 8.11 JSON Telemetry</span>
-              </div>
-              <button onClick={() => setRawEcsModalData(null)} className="text-slate-400 hover:text-slate-200">✕</button>
-            </div>
-            <pre className={`p-3 rounded-xl border text-[11px] font-mono overflow-auto max-h-72 ${
-              isDark ? "bg-slate-950 border-slate-800 text-emerald-300" : "bg-slate-50 border-slate-200 text-emerald-800"
-            }`}>
-              {JSON.stringify(rawEcsModalData, null, 2)}
+            <pre className="mt-4 p-4 rounded-xl bg-slate-950 text-sky-300 font-mono text-xs overflow-x-auto max-h-96">
+              {JSON.stringify(inspectingEcs, null, 2)}
             </pre>
-            <div className="flex justify-end">
-              <button onClick={() => setRawEcsModalData(null)} className="bg-sky-600 text-white text-xs font-bold px-4 py-1.5 rounded-lg">Close</button>
-            </div>
           </div>
         </div>
       )}
 
+      {/* ESCALATE MODAL */}
+      {showEscalateModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className={`max-w-lg w-full rounded-2xl border p-6 shadow-2xl text-left ${
+            isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"
+          }`}>
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div className="font-bold text-sm text-purple-400 flex items-center gap-2">
+                <Send className="h-4 w-4" />
+                Dispatch Incident Escalation
+              </div>
+              <button onClick={() => setShowEscalateModal(false)} className="text-slate-400 hover:text-slate-200">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="mt-4 space-y-3 text-xs">
+              <p className="text-slate-400">Select notification channels to broadcast incident package <strong>{selectedIncId}</strong>:</p>
+              <div className="space-y-2">
+                {["Slack #soc-war-room", "PagerDuty CISO On-Call Rotation", "Jira Security Task (CERT-In Ticket)", "RBI CSIR Portal API"].map((ch, i) => (
+                  <label key={i} className={`flex items-center gap-2 p-3 rounded-xl border cursor-pointer ${
+                    isDark ? "bg-slate-950 border-slate-800 hover:border-purple-500" : "bg-slate-50 border-slate-200 hover:border-purple-400"
+                  }`}>
+                    <input type="checkbox" defaultChecked className="rounded accent-purple-500" />
+                    <span className="font-semibold text-slate-200">{ch}</span>
+                  </label>
+                ))}
+              </div>
+              <div className="pt-3 flex justify-end gap-2">
+                <button onClick={() => setShowEscalateModal(false)} className="px-4 py-2 rounded-xl text-slate-400 hover:text-slate-200 font-bold">Cancel</button>
+                <button onClick={() => { alert(`Incident ${selectedIncId} escalated to war room & CISO.`); setShowEscalateModal(false); }} className="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-xl font-bold">Dispatch Alerts</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+export default App;

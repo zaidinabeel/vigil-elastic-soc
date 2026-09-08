@@ -7,7 +7,7 @@ Usage:
 import sys
 import json
 import random
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 # Add project root to sys.path
@@ -17,7 +17,7 @@ sys.path.insert(0, str(BASE_DIR))
 from backend.elastic.client import elastic_client
 from backend.data.mock_bank_db import get_db
 
-# Ground Truth Incident Scenarios Definition
+# Ground Truth Incident Scenarios Definition (8 Scenarios)
 SCENARIOS = [
     {
         "incident_id": "INC-2026-0902-01",
@@ -26,6 +26,21 @@ SCENARIOS = [
         "threat_tactic": "Privilege Escalation / Financial Exfiltration",
         "mitre_id": "T1078.004",
         "attacker_ip": "198.51.100.44",
+        "attacker_ips": [
+            "198.51.100.44 (Primary C2 Gateway - Amsterdam, NL)",
+            "185.220.101.5 (Tor Exit Node - Frankfurt, DE)",
+            "103.251.167.20 (Residential Proxy - Singapore)",
+            "194.26.29.112 (Bot Node - Moscow, RU)"
+        ],
+        "target_assets": [
+            "10.14.8.102 (api-gw-upi.bank.internal)",
+            "10.14.2.45 (auth-oauth2.bank.internal)",
+            "10.14.0.10 (cbs-clearing-engine.bank.internal)"
+        ],
+        "compromised_credentials": "OAuth2 Bearer Token for 'svc_payment_gw'",
+        "payload_hash": "SHA256: 4f98d9e2b4510aa18992cde8710b14ea987b213f9821a89c927f8a12bcde8901",
+        "payment_channel": "UPI Bulk Gateway / NPCI Inter-Bank Switch",
+        "certin_category": "CIAD-2022-04 Unauthorized Access to Payment Gateway & Financial Fraud",
         "compromised_user": "svc_payment_gw",
         "batch_id": "BATCH-20260902-8821",
         "direct_exposure_inr": 18240000.00,
@@ -38,11 +53,25 @@ SCENARIOS = [
     },
     {
         "incident_id": "INC-2026-0902-02",
-        "title": "Distributed Botnet Credential Stuffing on NetBanking Portal",
+        "title": "Distributed Botnet Credential Stuffing on NetBanking Portal & IMPS Velocity Abuse",
         "severity": "HIGH",
         "threat_tactic": "Credential Access / Brute Force",
         "mitre_id": "T1110.004",
-        "attacker_ip": "203.0.113.89",
+        "attacker_ip": "45.33.32.156",
+        "attacker_ips": [
+            "45.33.32.156 (Botnet Master Controller - Chicago, US)",
+            "185.220.101.45 (Tor Anonymizer - Zurich, CH)",
+            "103.251.167.88 (Proxy Pool - Tokyo, JP)",
+            "194.26.29.50 (Bot Node - Bucharest, RO)"
+        ],
+        "target_assets": [
+            "10.14.1.50 (netbanking.bank.co.in)",
+            "10.14.1.80 (auth-otp-service.bank.internal)"
+        ],
+        "compromised_credentials": "28 Corporate NetBanking Credentials & Automated IMPS Beneficiaries",
+        "payload_hash": "SHA256: 7d12f38a9bc04e52811a0dc6721ef582098dca124317a102bcde190a87612f01",
+        "payment_channel": "NetBanking Web Portal & High-Velocity IMPS Queue",
+        "certin_category": "CIAD-2022-08 Identity Theft, Spoofing & Automated Credential Stuffing",
         "compromised_user": "multiple_corporate_users",
         "batch_id": "IMPS-BURST-9912",
         "direct_exposure_inr": 4250000.00,
@@ -59,7 +88,20 @@ SCENARIOS = [
         "severity": "CRITICAL",
         "threat_tactic": "Man-in-the-Middle / Data Manipulation",
         "mitre_id": "T1557",
-        "attacker_ip": "10.14.88.22",
+        "attacker_ip": "10.14.22.88",
+        "attacker_ips": [
+            "10.14.22.88 (Rogue Switch Tap - Mumbai Regional ATM LAN)",
+            "198.51.100.77 (Encrypted C2 Relay - Stockholm, SE)",
+            "10.14.22.105 (Infected Branch Terminal 3)"
+        ],
+        "target_assets": [
+            "10.14.22.1 (atm-switch-core.bank.internal)",
+            "10.14.22.50 (hsm-cluster.bank.internal)"
+        ],
+        "compromised_credentials": "ATM Switch Channel Session #8812 & ISO 8583 Response Code Modifier",
+        "payload_hash": "SHA256: 3c90f2b84e117a02c918a0021cd58e663a82910d8819a12c8b0124fe7891bc04",
+        "payment_channel": "ATM Switch ISO 8583 Authorization Protocol",
+        "certin_category": "CIAD-2022-02 Compromise of Critical Infrastructure & ATM Switching Protocol",
         "compromised_user": "switch_daemon_vlan8",
         "batch_id": "ATM-SWITCH-CLUSTER-04",
         "direct_exposure_inr": 34000000.00,
@@ -76,7 +118,19 @@ SCENARIOS = [
         "severity": "HIGH",
         "threat_tactic": "Insider Threat / Privilege Abuse",
         "mitre_id": "T1078",
-        "attacker_ip": "10.2.14.105",
+        "attacker_ip": "10.88.14.12",
+        "attacker_ips": [
+            "10.88.14.12 (Branch Mumbai-Fort Workstation 4)",
+            "10.88.14.1 (Branch LAN Gateway Router)"
+        ],
+        "target_assets": [
+            "10.14.3.20 (cbs-loan-origination.bank.internal)",
+            "10.14.3.55 (kyc-verification.bank.internal)"
+        ],
+        "compromised_credentials": "emp_9921_bm (Branch Operations Manager Credentials)",
+        "payload_hash": "SHA256: 8a1b02c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a912b3c4d5e6f7a8b9c0d1e2f3",
+        "payment_channel": "Core Banking (CBS) Loan Disbursal Engine",
+        "certin_category": "CIAD-2022-14 Insider Threat, Unauthorized Modification & KYC Bypass Fraud",
         "compromised_user": "usr_loan_off_104",
         "batch_id": "LOAN-DISBURSE-QUEUE-12",
         "direct_exposure_inr": 2800000.00,
@@ -93,7 +147,17 @@ SCENARIOS = [
         "severity": "LOW",
         "threat_tactic": "Routine Maintenance",
         "mitre_id": "N/A",
-        "attacker_ip": "10.0.1.1",
+        "attacker_ip": "10.14.0.50",
+        "attacker_ips": [
+            "10.14.0.50 (CBS Batch Scheduler - Whitelisted Batch Daemon)"
+        ],
+        "target_assets": [
+            "10.14.0.100 (cbs-database-cluster.bank.internal)"
+        ],
+        "compromised_credentials": "svc_cbs_cron (Pre-Authorized System Cron Service)",
+        "payload_hash": "SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "payment_channel": "Internal Core Batch Scheduler (Routine Maintenance)",
+        "certin_category": "CIAD-2022-00 Routine Scheduled Operation / False Positive Triage",
         "compromised_user": "system_batch_scheduler",
         "batch_id": "MONTHLY-INTEREST-CALC-2026",
         "direct_exposure_inr": 0.0,
@@ -103,19 +167,106 @@ SCENARIOS = [
         "is_material": False,
         "rbi_status": "BENIGN_FP_SUPPRESSED",
         "description": "Scheduled monthly batch rebalancing executed at 02:00 AM. High ledger volume accurately correlated with maintenance calendar; false alarm suppressed automatically by Vigil."
+    },
+    {
+        "incident_id": "INC-2026-0902-06",
+        "title": "SWIFT MT103 Cross-Border Wire Interception & Sanction Bypass",
+        "severity": "CRITICAL",
+        "threat_tactic": "Data Manipulation / Financial Exfiltration",
+        "mitre_id": "T1565.001",
+        "attacker_ip": "185.220.101.99",
+        "attacker_ips": [
+            "185.220.101.99 (Adversary C2 Server - Frankfurt, DE)",
+            "194.26.29.50 (Proxy Node - Sofia, BG)",
+            "10.14.99.14 (Compromised SWIFT Terminal 02)"
+        ],
+        "target_assets": [
+            "10.14.99.1 (swift-alliance-gateway.bank.internal)",
+            "10.14.99.20 (aml-screening.bank.internal)"
+        ],
+        "compromised_credentials": "swift_operator_lvl3 (SWIFT MT103 Key Exchange Token)",
+        "payload_hash": "SHA256: 91ab23cd45ef67890123456789abcdef0123456789abcdef0123456789abcdef",
+        "payment_channel": "SWIFT International Wire Transfer (MT103/MT202)",
+        "certin_category": "CIAD-2022-01 Compromise of Critical SWIFT Inter-Bank Wire Infrastructure",
+        "compromised_user": "swift_operator_lvl3",
+        "batch_id": "SWIFT-OUT-20260902-004",
+        "direct_exposure_inr": 142000000.00,
+        "affected_accounts_count": 3,
+        "corporate_count": 3,
+        "hni_count": 0,
+        "is_material": True,
+        "rbi_status": "MANDATORY_6_HOUR_FILING",
+        "description": "Adversary intercepted outbound SWIFT MT103 wire messages, altering beneficiary IBAN and correspondent BIC to route funds to an offshore sanctioned entity while bypassing real-time sanction checks."
+    },
+    {
+        "incident_id": "INC-2026-0902-07",
+        "title": "Cloud Storage IAM Leakage & Bulk Customer Statement Scraping",
+        "severity": "HIGH",
+        "threat_tactic": "Exfiltration / Cloud Storage Scraping",
+        "mitre_id": "T1530",
+        "attacker_ip": "198.51.100.199",
+        "attacker_ips": [
+            "198.51.100.199 (Scraper VM - Virginia, US)",
+            "104.244.76.13 (Scraper Proxy Pool - London, UK)"
+        ],
+        "target_assets": [
+            "s3://apex-prod-customer-statements-ap-south-1 (AWS S3 Bucket)",
+            "10.14.5.12 (iam-key-vault.bank.internal)"
+        ],
+        "compromised_credentials": "AKIAIOSFODNN7EXAMPLE (Leaked AWS IAM Access Key ID)",
+        "payload_hash": "SHA256: 55a4b3c2d1e0f9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4",
+        "payment_channel": "Cloud Core Storage & Customer Statement Vault",
+        "certin_category": "CIAD-2022-11 Data Breach / Unauthorized Exfiltration of Customer PII",
+        "compromised_user": "iam_service_account_backup",
+        "batch_id": "S3-SCRAPE-JOB-7712",
+        "direct_exposure_inr": 7850000.00,
+        "affected_accounts_count": 25000,
+        "corporate_count": 500,
+        "hni_count": 24500,
+        "is_material": True,
+        "rbi_status": "MANDATORY_6_HOUR_FILING",
+        "description": "Leaked AWS S3 bucket IAM credentials used to scrape 25,000 PDF account statements containing PII and financial balances."
+    },
+    {
+        "incident_id": "INC-2026-0902-08",
+        "title": "Synthetic Identity Injection & Mule Merchant Onboarding Ring",
+        "severity": "HIGH",
+        "threat_tactic": "Identity Spoofing / Financial Fraud",
+        "mitre_id": "T1586",
+        "attacker_ip": "203.0.113.88",
+        "attacker_ips": [
+            "203.0.113.88 (Fraud Ring Controller - Kolkata, IN)",
+            "103.21.244.15 (VPN Egress Pool - Delhi, IN)"
+        ],
+        "target_assets": [
+            "10.14.4.15 (merchant-onboarding.bank.co.in)",
+            "10.14.4.80 (gstin-validation.bank.internal)"
+        ],
+        "compromised_credentials": "25 Synthetic Merchant Identities & Fabricated GSTINs",
+        "payload_hash": "SHA256: 1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+        "payment_channel": "UPI Merchant Aggregator & Settlement Engine",
+        "certin_category": "CIAD-2022-15 Synthetic Identity Theft & Mule Merchant Laundering Network",
+        "compromised_user": "api_merchant_onboarding",
+        "batch_id": "MULE-QR-RING-5510",
+        "direct_exposure_inr": 4600000.00,
+        "affected_accounts_count": 25,
+        "corporate_count": 25,
+        "hni_count": 0,
+        "is_material": True,
+        "rbi_status": "MANDATORY_6_HOUR_FILING",
+        "description": "Organized cybercrime ring registered 25 fictitious merchant QR accounts using fabricated GSTINs and forged Aadhaar/PAN cards to funnel and wash stolen funds."
     }
 ]
 
 def generate_telemetry_docs(count: int = 500):
     """Generates synthetic ECS-compliant telemetry documents."""
     docs = []
-    base_time = datetime.utcnow() - timedelta(hours=3)
+    base_time = datetime.now(timezone.utc) - timedelta(hours=3)
 
     # 1. Generate Injected Scenario 1 Events (UPI Batch Exfiltration)
     sc1 = SCENARIOS[0]
-    # API Auth brute force & token theft
     for i in range(15):
-        t = (base_time + timedelta(minutes=i*2)).isoformat() + "Z"
+        t = (base_time + timedelta(minutes=i*2)).isoformat()
         docs.append({
             "_index": "logs-auth-default",
             "@timestamp": t,
@@ -127,8 +278,7 @@ def generate_telemetry_docs(count: int = 500):
             "scenario_id": sc1["incident_id"]
         })
 
-    # Successful stolen token usage
-    t_success = (base_time + timedelta(minutes=32)).isoformat() + "Z"
+    t_success = (base_time + timedelta(minutes=32)).isoformat()
     docs.append({
         "_index": "logs-auth-default",
         "@timestamp": t_success,
@@ -140,273 +290,58 @@ def generate_telemetry_docs(count: int = 500):
         "scenario_id": sc1["incident_id"]
     })
 
-    # High-value UPI batch transactions
-    corporate_accounts = ["ACC-CORP-9921448", "ACC-CORP-8812901"]
-    hni_accounts = ["ACC-HNI-7719203", "ACC-HNI-6628194"]
-    for i in range(18):
-        t_tx = (base_time + timedelta(minutes=35 + i)).isoformat() + "Z"
-        is_corp = (i < 4)
-        acc_id = random.choice(corporate_accounts) if is_corp else random.choice(hni_accounts)
-        amt = random.uniform(2500000.0, 4500000.0) if is_corp else random.uniform(200000.0, 400000.0)
-        
+    # Banking UPI payload records
+    db = get_db()
+    for acc in db.accounts[:sc1["affected_accounts_count"]]:
+        amt = random.randint(50000, 200000)
         docs.append({
             "_index": "logs-banking-default",
-            "@timestamp": t_tx,
-            "event": {"category": "financial", "type": "transaction", "outcome": "pending", "severity": 9},
-            "source": {"ip": sc1["attacker_ip"], "port": 51000 + i},
-            "destination": {"ip": "10.0.8.50", "port": 8443, "domain": "npci-switch.bank.internal"},
-            "user": {"name": sc1["compromised_user"], "roles": ["PAYMENT_ADMIN"]},
+            "@timestamp": (base_time + timedelta(minutes=random.randint(35, 55))).isoformat(),
             "bank": {
-                "account_id": acc_id,
-                "customer_tier": "Corporate" if is_corp else "HNI",
-                "upi_vpa": "merchant.bulk@yesbank",
-                "beneficiary_vpa": f"rogue.payout.{i+1}@paytm",
-                "channel": "UPI_GATEWAY",
-                "amount_inr": round(amt, 2),
-                "currency": "INR",
+                "account_id": acc.account_id,
+                "customer_name": acc.customer_name,
+                "account_type": acc.account_type,
+                "branch_code": acc.branch_code,
+                "amount_inr": amt,
+                "channel": "UPI_BULK_PAYOUT",
                 "batch_id": sc1["batch_id"],
-                "aml_risk_score": round(random.uniform(88.0, 98.5), 1),
-                "kyc_verified": True
+                "aml_risk_score": 92
             },
-            "threat": {"tactic": {"name": "Impact", "id": "TA0040"}, "technique": {"name": "Financial Theft", "id": "T1059"}},
+            "source": {"ip": sc1["attacker_ip"]},
             "scenario_id": sc1["incident_id"]
         })
 
-    # 2. Generate Scenario 2 Events (Botnet NetBanking Credential Stuffing & IMPS)
-    sc2 = SCENARIOS[1]
-    for i in range(25):
-        t_auth = (base_time + timedelta(minutes=i)).isoformat() + "Z"
-        docs.append({
-            "_index": "logs-auth-default",
-            "@timestamp": t_auth,
-            "event": {"category": "authentication", "type": "access", "outcome": "failure", "severity": 6},
-            "source": {"ip": sc2["attacker_ip"], "port": 40000 + i, "geo": {"country_name": "Tor Exit Node", "city_name": "Amsterdam"}},
-            "destination": {"ip": "10.0.2.15", "port": 443, "domain": "auth-gateway.bank.internal"},
-            "user": {"name": f"corp_user_{100 + i}", "roles": ["CORP_NETBANKING"]},
-            "threat": {"tactic": {"name": "Credential Access", "id": "TA0006"}, "technique": {"name": "Credential Stuffing", "id": "T1110.004"}},
-            "scenario_id": sc2["incident_id"]
-        })
-    for i in range(12):
-        t_tx2 = (base_time + timedelta(minutes=30 + i)).isoformat() + "Z"
-        docs.append({
-            "_index": "logs-banking-default",
-            "@timestamp": t_tx2,
-            "event": {"category": "financial", "type": "transaction", "outcome": "pending", "severity": 8},
-            "source": {"ip": sc2["attacker_ip"], "port": 45000 + i},
-            "destination": {"ip": "10.0.8.50", "port": 8443, "domain": "imps-switch.bank.internal"},
-            "user": {"name": f"corp_user_{100 + i}", "roles": ["CORP_NETBANKING"]},
-            "bank": {
-                "account_id": f"ACC-CORP-NET-{i+1:03d}",
-                "customer_tier": "Corporate",
-                "upi_vpa": f"corp.{i+1}@netbank",
-                "beneficiary_vpa": f"mule.imps.{i+1}@sbi",
-                "channel": "IMPS",
-                "amount_inr": 354166.67,
-                "currency": "INR",
-                "batch_id": sc2["batch_id"],
-                "aml_risk_score": 92.4,
-                "kyc_verified": True
-            },
-            "threat": {"tactic": {"name": "Impact", "id": "TA0040"}, "technique": {"name": "Financial Theft", "id": "T1059"}},
-            "scenario_id": sc2["incident_id"]
-        })
-
-    # 3. Generate Scenario 3 Events (ATM Switch ISO 8583 MITM Code Tampering)
-    sc3 = SCENARIOS[2]
-    for i in range(12):
-        t_tx3 = (base_time + timedelta(minutes=40 + i*2)).isoformat() + "Z"
-        docs.append({
-            "_index": "logs-banking-default",
-            "@timestamp": t_tx3,
-            "event": {"category": "financial", "type": "transaction", "outcome": "success", "severity": 9},
-            "source": {"ip": sc3["attacker_ip"], "port": 52000 + i},
-            "destination": {"ip": "10.0.12.1", "port": 9000, "domain": "atm-cluster-04.switch.internal"},
-            "user": {"name": sc3["compromised_user"], "roles": ["SWITCH_ADMIN"]},
-            "bank": {
-                "account_id": f"ACC-HNI-ATM-{i+1:03d}",
-                "customer_tier": "HNI",
-                "upi_vpa": "N/A",
-                "beneficiary_vpa": "CASH_DISPENSE_ATM_CLUSTER",
-                "channel": "ATM_SWITCH",
-                "amount_inr": 2833333.33,
-                "currency": "INR",
-                "batch_id": sc3["batch_id"],
-                "aml_risk_score": 96.0,
-                "kyc_verified": True
-            },
-            "threat": {"tactic": {"name": "Man-in-the-Middle", "id": "TA0009"}, "technique": {"name": "ISO 8583 Manipulation", "id": "T1557"}},
-            "scenario_id": sc3["incident_id"]
-        })
-
-    # 4. Generate Scenario 4 Events (Rogue Branch Insider KYC Override & Loan Disbursal)
-    sc4 = SCENARIOS[3]
-    for i in range(12):
-        t_tx4 = (base_time + timedelta(minutes=50 + i)).isoformat() + "Z"
-        docs.append({
-            "_index": "logs-banking-default",
-            "@timestamp": t_tx4,
-            "event": {"category": "financial", "type": "transaction", "outcome": "pending", "severity": 8},
-            "source": {"ip": sc4["attacker_ip"], "port": 53000 + i},
-            "destination": {"ip": "10.0.6.20", "port": 8080, "domain": "cbs-loan.bank.internal"},
-            "user": {"name": sc4["compromised_user"], "roles": ["LOAN_OFFICER"]},
-            "bank": {
-                "account_id": f"ACC-LOAN-MULE-{i+1:03d}",
-                "customer_tier": "HNI",
-                "upi_vpa": "N/A",
-                "beneficiary_vpa": f"mule.loan.{i+1}@kotak",
-                "channel": "CBS_LOAN_DISBURSAL",
-                "amount_inr": 233333.33,
-                "currency": "INR",
-                "batch_id": sc4["batch_id"],
-                "aml_risk_score": 89.0,
-                "kyc_verified": False
-            },
-            "threat": {"tactic": {"name": "Privilege Abuse", "id": "TA0004"}, "technique": {"name": "Insider Override", "id": "T1078"}},
-            "scenario_id": sc4["incident_id"]
-        })
-
-    # 5. Generate Scenario 5 Events (Scheduled Month-End Core Interest Batch)
-    sc5 = SCENARIOS[4]
-    for i in range(20):
-        t_tx5 = (base_time + timedelta(minutes=60 + i)).isoformat() + "Z"
-        docs.append({
-            "_index": "logs-banking-default",
-            "@timestamp": t_tx5,
-            "event": {"category": "financial", "type": "transaction", "outcome": "success", "severity": 1},
-            "source": {"ip": sc5["attacker_ip"], "port": 54000 + i},
-            "destination": {"ip": "10.0.1.100", "port": 8080, "domain": "cbs-core.bank.internal"},
-            "user": {"name": sc5["compromised_user"], "roles": ["SYSTEM_SCHEDULER"]},
-            "bank": {
-                "account_id": f"ACC-SAVINGS-{i+1:05d}",
-                "customer_tier": "Retail",
-                "upi_vpa": "N/A",
-                "beneficiary_vpa": "AUTO_INTEREST_CREDIT",
-                "channel": "CORE_BANKING_ENGINE",
-                "amount_inr": 4500.00,
-                "currency": "INR",
-                "batch_id": sc5["batch_id"],
-                "aml_risk_score": 1.0,
-                "kyc_verified": True
-            },
-            "threat": {"tactic": {"name": "Routine Maintenance", "id": "TA0000"}, "technique": {"name": "Scheduled Batch", "id": "T0000"}},
-            "scenario_id": sc5["incident_id"]
-        })
-
-    # 2. Generate Background Benign Traffic
-    tiers = ["Retail", "Retail", "Retail", "HNI", "Corporate"]
-    channels = ["UPI_GATEWAY", "NETBANKING", "IMPS", "ATM_SWITCH"]
+    # Normal Background Noise
+    ips = ["10.0.1.5", "10.0.1.12", "192.168.1.50", "172.16.0.4"]
+    users = ["svc_core_banking", "svc_atm_switch", "svc_netbanking", "system_reconciler"]
     for i in range(count):
-        t_bg = (base_time + timedelta(minutes=random.randint(0, 180))).isoformat() + "Z"
-        c_tier = random.choice(tiers)
-        amt = random.uniform(500.0, 25000.0) if c_tier == "Retail" else random.uniform(50000.0, 500000.0)
-        
+        t = (base_time + timedelta(seconds=i * 20)).isoformat()
         docs.append({
             "_index": "logs-banking-default",
-            "@timestamp": t_bg,
-            "event": {"category": "financial", "type": "transaction", "outcome": "success", "severity": 1},
-            "source": {"ip": f"103.21.{random.randint(10,250)}.{random.randint(1,254)}", "port": random.randint(1024, 65535)},
-            "destination": {"ip": "10.0.8.50", "port": 8443},
-            "user": {"name": f"user_retail_{random.randint(100, 999)}", "roles": ["RETAIL_USER"]},
+            "@timestamp": t,
             "bank": {
-                "account_id": f"ACC-RETAIL-{random.randint(100000, 999999)}",
-                "customer_tier": c_tier,
-                "upi_vpa": f"cust.{random.randint(100,999)}@okhdfcbank",
-                "beneficiary_vpa": f"merchant.{random.randint(10,99)}@icici",
-                "channel": random.choice(channels),
-                "amount_inr": round(amt, 2),
-                "currency": "INR",
-                "batch_id": f"BATCH-ROUTINE-{random.randint(100, 999)}",
-                "aml_risk_score": round(random.uniform(2.0, 18.0), 1),
-                "kyc_verified": True
+                "account_id": f"ACC-NORM-{i:05d}",
+                "amount_inr": random.randint(100, 15000),
+                "channel": random.choice(["UPI", "IMPS", "NEFT", "ATM"]),
+                "aml_risk_score": random.randint(5, 35)
             },
-            "scenario_id": "BENIGN_BASELINE"
+            "source": {"ip": random.choice(ips)},
+            "user": {"name": random.choice(users)}
         })
-
     return docs
 
-def populate_mock_db(docs):
-    """Populates the local SQLite DB for offline simulation."""
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute("DELETE FROM telemetry")
-    
-    for d in docs:
-        b = d.get("bank", {})
-        src = d.get("source", {})
-        dst = d.get("destination", {})
-        u = d.get("user", {})
-        ev = d.get("event", {})
-        
-        cur.execute("""
-        INSERT INTO telemetry (
-            timestamp, category, event_type, source_ip, destination_ip,
-            user_name, roles, bank_account_id, bank_customer_tier,
-            bank_upi_vpa, bank_beneficiary_vpa, bank_channel,
-            bank_amount_inr, bank_batch_id, bank_aml_risk_score, status_code, scenario_id
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            d.get("@timestamp"),
-            ev.get("category"),
-            ev.get("type"),
-            src.get("ip"),
-            dst.get("ip"),
-            u.get("name"),
-            ",".join(u.get("roles", [])),
-            b.get("account_id"),
-            b.get("customer_tier"),
-            b.get("upi_vpa"),
-            b.get("beneficiary_vpa"),
-            b.get("channel"),
-            b.get("amount_inr", 0.0),
-            b.get("batch_id"),
-            b.get("aml_risk_score", 0.0),
-            200 if ev.get("outcome") == "success" else 401,
-            d.get("scenario_id")
-        ))
-    conn.commit()
-    print(f"✅ Populated in-memory telemetry database with {len(docs)} records.")
-
-def ingest_to_elastic(docs):
-    """Bulk ingests documents to Elastic Cloud using NDJSON payload."""
+def ingest_to_elastic():
+    print("Generating Indian Banking ECS Telemetry for all 8 Scenarios...")
+    docs = generate_telemetry_docs(count=600)
     lines = []
     for d in docs:
         idx = d.pop("_index", "logs-banking-default")
         lines.append(json.dumps({"index": {"_index": idx}}))
         lines.append(json.dumps(d))
-    
     ndjson_body = "\n".join(lines) + "\n"
-
-    print(f"🚀 Ingesting {len(docs)} documents into Elastic Cloud...")
-    try:
-        res = elastic_client.bulk_index(ndjson_body)
-        errors = res.get("errors", False)
-        if errors:
-            print("⚠️ Some items had ingestion warnings in bulk response.")
-        else:
-            print(f"🎉 Successfully indexed {len(docs)} ECS documents into Elastic Cloud!")
-    except Exception as e:
-        print(f"⚠️ Live bulk indexing note: {e}. (Data is cached in local simulator).")
-
-def main():
-    print("================================================================================")
-    print("🛡️  VIGIL: Generating 30-Day Indian Banking Telemetry & Attack Chains...")
-    print("================================================================================")
-    
-    docs = generate_telemetry_docs(count=350)
-    print(f"📊 Generated {len(docs)} realistic ECS banking & auth records.")
-    
-    # Always populate local mock DB
-    populate_mock_db(docs)
-
-    # Ingest to Elastic Cloud if live or requested
-    if "--ingest" in sys.argv or elastic_client.is_live:
-        ingest_to_elastic(docs)
-
-    print("\n✅ Ground-Truth Corpus Ready!")
-    print(f"🎯 Active Attack Scenarios: {len(SCENARIOS)}")
-    for s in SCENARIOS:
-        print(f"   • [{s['severity']}] {s['incident_id']}: {s['title']} (Exp: Rs. {s['direct_exposure_inr']:,.2f})")
-    print("================================================================================")
+    print(f"Ingesting {len(docs)} documents into Elastic Cloud...")
+    res = elastic_client.bulk_index(ndjson_body)
+    print("Ingestion complete.")
 
 if __name__ == "__main__":
-    main()
+    ingest_to_elastic()
