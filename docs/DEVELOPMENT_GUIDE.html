@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>VIGIL - Developer & Engineering Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+  @page {
+    size: A4;
+    margin: 18mm 14mm 18mm 14mm;
+    @bottom-right {
+      content: counter(page);
+    }
+  }
+
+  * {
+    box-sizing: border-box;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: #1E293B;
+    background-color: #FFFFFF;
+    line-height: 1.55;
+    font-size: 10pt;
+    margin: 0;
+    padding: 0;
+  }
+
+  .header-banner {
+    background: linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #0369A1 100%);
+    color: #FFFFFF;
+    padding: 24px 28px;
+    border-radius: 12px;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+  }
+
+  .header-badges {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .badge {
+    font-size: 7.5pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 4px 10px;
+    border-radius: 6px;
+  }
+
+  .badge-blue { background-color: rgba(56, 189, 248, 0.2); color: #38BDF8; border: 1px solid rgba(56, 189, 248, 0.4); }
+  .badge-green { background-color: rgba(16, 185, 129, 0.2); color: #34D399; border: 1px solid rgba(16, 185, 129, 0.4); }
+  .badge-purple { background-color: rgba(168, 85, 247, 0.2); color: #C084FC; border: 1px solid rgba(168, 85, 247, 0.4); }
+
+  .doc-title {
+    font-size: 20pt;
+    font-weight: 800;
+    margin: 0 0 6px 0;
+    color: #0F172A;
+    letter-spacing: -0.5px;
+  }
+
+  .header-banner .doc-title {
+    color: #FFFFFF;
+  }
+
+  .subtitle {
+    font-size: 11pt;
+    color: #94A3B8;
+    margin: 0;
+    font-weight: 500;
+  }
+
+  .section-title {
+    font-size: 13pt;
+    font-weight: 700;
+    color: #0F172A;
+    border-left: 4px solid #0284C7;
+    padding-left: 10px;
+    margin-top: 24px;
+    margin-bottom: 12px;
+    page-break-after: avoid;
+  }
+
+  .subsection-title {
+    font-size: 11pt;
+    font-weight: 700;
+    color: #1E293B;
+    margin-top: 18px;
+    margin-bottom: 8px;
+    page-break-after: avoid;
+  }
+
+  .h4-title {
+    font-size: 10pt;
+    font-weight: 600;
+    color: #334155;
+    margin-top: 12px;
+    margin-bottom: 6px;
+    page-break-after: avoid;
+  }
+
+  .paragraph {
+    margin: 6px 0;
+    color: #334155;
+    font-size: 9.5pt;
+  }
+
+  .divider {
+    border: 0;
+    height: 1px;
+    background: #E2E8F0;
+    margin: 20px 0;
+  }
+
+  .spacer {
+    height: 6px;
+  }
+
+  .bullet-item {
+    margin: 4px 0 4px 18px;
+    color: #334155;
+    font-size: 9.5pt;
+  }
+
+  .numbered-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin: 6px 0;
+    font-size: 9.5pt;
+    color: #334155;
+  }
+
+  .num-badge {
+    background: #E0F2FE;
+    color: #0369A1;
+    font-weight: 700;
+    font-size: 8pt;
+    padding: 2px 7px;
+    border-radius: 4px;
+    min-width: 20px;
+    text-align: center;
+  }
+
+  .inline-code {
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    font-size: 8.5pt;
+    background-color: #F1F5F9;
+    color: #0F172A;
+    padding: 2px 5px;
+    border-radius: 4px;
+    border: 1px solid #E2E8F0;
+  }
+
+  .code-container {
+    background-color: #0F172A;
+    border-radius: 8px;
+    margin: 12px 0;
+    overflow: hidden;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    page-break-inside: avoid;
+  }
+
+  .code-header {
+    background-color: #1E293B;
+    color: #94A3B8;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 7.5pt;
+    font-weight: 600;
+    padding: 5px 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid #334155;
+  }
+
+  pre {
+    margin: 0;
+    padding: 12px 14px;
+    overflow-x: auto;
+  }
+
+  code {
+    font-family: 'JetBrains Mono', Consolas, Monaco, monospace;
+    font-size: 8pt;
+    color: #E2E8F0;
+    line-height: 1.45;
+  }
+
+  .table-wrapper {
+    margin: 14px 0;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #E2E8F0;
+    page-break-inside: avoid;
+  }
+
+  .styled-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9pt;
+  }
+
+  .styled-table th {
+    background-color: #F8FAFC;
+    color: #0F172A;
+    font-weight: 700;
+    text-align: left;
+    padding: 9px 12px;
+    border-bottom: 2px solid #E2E8F0;
+    font-size: 8.5pt;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+
+  .styled-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #F1F5F9;
+    color: #334155;
+    vertical-align: top;
+  }
+
+  .styled-table tr:nth-child(even) {
+    background-color: #FAFAFA;
+  }
+
+  .footer-note {
+    margin-top: 30px;
+    padding: 12px 16px;
+    background-color: #F0FDF4;
+    border: 1px solid #BBF7D0;
+    border-radius: 8px;
+    color: #166534;
+    font-size: 8.5pt;
+  }
+</style>
+</head>
+<body>
+
+<div class="header-banner">
+  <div class="header-badges">
+    <span class="badge badge-blue">Elastic Search AI Platform</span>
+    <span class="badge badge-green">AWS Bedrock</span>
+    <span class="badge badge-purple">Sarvam AI</span>
+  </div>
+  <h1 class="doc-title">🛡️ VIGIL: Developer & Engineering Guide</h1>
+  <p class="subtitle">Comprehensive Technical Architecture & Implementation Blueprint for Indian BFSI SOC</p>
+</div>
+
+<h1 class="doc-title">VIGIL: Developer & Engineering Guide</h1>
+<h3 class="subsection-title"><em>Comprehensive Technical Blueprint for Building VIGIL</em></h3>
+<div class="spacer"></div>
+<hr class="divider"/>
+<div class="spacer"></div>
+<h2 class="section-title">1. System Architecture & Repository Layout</h2>
+<div class="spacer"></div>
+<div class="code-container"><div class="code-header">code</div><pre><code>elastic_hackathon/
+├── docs/
+│   ├── PITCH_DECK.md                 # Slide-by-slide presentation with speaker notes
+│   ├── DEVELOPMENT_GUIDE.md          # Technical implementation blueprint (this file)
+│   └── TEAM_ALIGNMENT_AND_ROLES.md   # Pitch script, team task matrix &amp; roadmap
+│
+├── backend/
+│   ├── main.py                       # FastAPI application entrypoint &amp; routing
+│   ├── config.py                     # Env vars &amp; configuration (AWS, Elastic, Sarvam)
+│   ├── requirements.txt              # Python dependencies
+│   │
+│   ├── elastic/
+│   │   ├── client.py                 # Unified Elastic client (supports live ES &amp; offline engine)
+│   │   ├── ecs_schema.py             # ECS v8.11+ mapping + BFSI custom fields
+│   │   └── esql_engine.py            # ES|QL query generator &amp; executor
+│   │
+│   ├── data/
+│   │   ├── telemetry_generator.py    # Synthetic 30-day ECS banking + security log generator
+│   │   ├── scenarios.json            # 5 Injected attack chains (UPI fraud, credential stuffing, etc.)
+│   │   └── mock_bank_db.py           # Core banking database (accounts, VPAs, customer tiers)
+│   │
+│   ├── workflow/
+│   │   ├── orchestrator.py           # 6-step deterministic state machine
+│   │   ├── step1_classification.py   # RBI materiality &amp; MITRE ATT&amp;CK classifier
+│   │   ├── step2_evidence.py         # ES|QL evidence retriever (generate_esql, alerts_tool)
+│   │   ├── step3_exposure.py         # bank.exposure.lookup (Rupee risk quantification)
+│   │   ├── step4_containment.py      # Containment drafter with Human-in-the-Loop gate
+│   │   ├── step5_certin_report.py    # certin.report.draft (Annexure-1 PDF/MD generator)
+│   │   └── step6_evidence_ledger.py  # evidence.ledger.append (SHA-256 hash-chaining)
+│   │
+│   └── services/
+│       ├── bedrock_reasoner.py       # AWS Bedrock Claude client with deterministic fallback
+│       ├── sarvam_translator.py      # Sarvam 105B &amp; Translate client (22 Indic languages)
+│       └── pdf_generator.py          # ReportLab official CERT-In PDF builder
+│
+└── frontend/
+    ├── package.json                  # Vite + React + Tailwind dependencies
+    ├── vite.config.ts
+    ├── index.html
+    └── src/
+        ├── App.tsx                   # Main layout &amp; router
+        ├── types/                    # TypeScript interfaces for Incidents, ES|QL, Ledger
+        ├── components/
+        │   ├── Header.tsx            # 6-Hour Clock Countdown &amp; Alert Zero Badge
+        │   ├── IncidentStream.tsx    # Attack Discovery narrative feed
+        │   ├── WorkflowTimeline.tsx  # 6-Step live visualizer &amp; step inspector
+        │   ├── ExposureCard.tsx      # ₹ INR financial exposure &amp; blast radius breakdown
+        │   ├── EsqlInspector.tsx     # Interactive ES|QL query terminal &amp; table view
+        │   ├── HitlModal.tsx         # 1-Click Human-in-the-Loop containment approval
+        │   ├── CertInReportView.tsx  # Official Annexure-1 report renderer &amp; PDF downloader
+        │   ├── IndicLanguageBar.tsx  # Sarvam AI Indic language switcher (22 languages)
+        │   └── LedgerVerifier.tsx    # Cryptographic SHA-256 block chain audit inspector
+        └── api/                      # Backend API client (REST + WebSocket)</code></pre></div>
+<div class="spacer"></div>
+<hr class="divider"/>
+<div class="spacer"></div>
+<h2 class="section-title">2. Telemetry & ECS Schema Specification</h2>
+<div class="spacer"></div>
+<p class="paragraph">Vigil normalizes all events into the <strong>Elastic Common Schema (ECS)</strong>, extending it with banking fields (<code class="inline-code">bank.*</code>).</p>
+<div class="spacer"></div>
+<h3 class="subsection-title">Standard ECS Fields Used:</h3>
+<li class="bullet-item"><code class="inline-code">@timestamp</code>: ISO 8601 event timestamp</li>
+<li class="bullet-item"><code class="inline-code">event.category</code>: <code class="inline-code">network</code>, <code class="inline-code">authentication</code>, <code class="inline-code">process</code>, <code class="inline-code">financial</code></li>
+<li class="bullet-item"><code class="inline-code">event.type</code>: <code class="inline-code">start</code>, <code class="inline-code">access</code>, <code class="inline-code">denied</code>, <code class="inline-code">transaction</code></li>
+<li class="bullet-item"><code class="inline-code">source.ip</code>, <code class="inline-code">destination.ip</code>, <code class="inline-code">source.port</code>, <code class="inline-code">destination.port</code></li>
+<li class="bullet-item"><code class="inline-code">user.name</code>, <code class="inline-code">user.roles</code>, <code class="inline-code">user.domain</code></li>
+<li class="bullet-item"><code class="inline-code">host.name</code>, <code class="inline-code">host.ip</code>, <code class="inline-code">host.os.name</code></li>
+<li class="bullet-item"><code class="inline-code">threat.tactic.name</code>, <code class="inline-code">threat.technique.id</code> (MITRE ATT&CK)</li>
+<div class="spacer"></div>
+<h3 class="subsection-title">Custom Banking Extensions (<code class="inline-code">bank.*</code>):</h3>
+<div class="code-container"><div class="code-header">json</div><pre><code>{
+  &quot;bank&quot;: {
+    &quot;account_id&quot;: &quot;ACC-CORP-9921448&quot;,
+    &quot;customer_tier&quot;: &quot;Corporate&quot;,          // &quot;Corporate&quot; | &quot;HNI&quot; | &quot;Retail&quot;
+    &quot;upi_vpa&quot;: &quot;merchant.bulk@yesbank&quot;,
+    &quot;channel&quot;: &quot;UPI_GATEWAY&quot;,               // &quot;UPI&quot; | &quot;IMPS&quot; | &quot;NETBANKING&quot; | &quot;ATM&quot; | &quot;CORE_API&quot;
+    &quot;amount_inr&quot;: 18240000.00,
+    &quot;beneficiary_vpa&quot;: &quot;rogue.payout@paytm&quot;,
+    &quot;aml_risk_score&quot;: 92.5,
+    &quot;is_batch_payout&quot;: true,
+    &quot;batch_id&quot;: &quot;BATCH-20260902-8821&quot;
+  }
+}</code></pre></div>
+<div class="spacer"></div>
+<hr class="divider"/>
+<div class="spacer"></div>
+<h2 class="section-title">3. ES|QL Query Catalogue for SOC Investigation</h2>
+<div class="spacer"></div>
+<p class="paragraph">Vigil leverages <strong>ES|QL (Elasticsearch Query Language)</strong> to retrieve grounded forensic evidence across millions of events in milliseconds.</p>
+<div class="spacer"></div>
+<h3 class="subsection-title">Query 1: Extract Privileged Escalation & Suspicious Logins</h3>
+<div class="code-container"><div class="code-header">esql</div><pre><code>FROM logs-auth-*
+| WHERE event.outcome == &quot;success&quot; AND user.roles == &quot;SUPER_ADMIN&quot;
+| STATS count() by user.name, source.ip, destination.ip
+| SORT count() desc
+| LIMIT 20</code></pre></div>
+<div class="spacer"></div>
+<h3 class="subsection-title">Query 2: Correlate IP Blast Radius across NetBanking & UPI</h3>
+<div class="code-container"><div class="code-header">esql</div><pre><code>FROM logs-*
+| WHERE source.ip == &quot;198.51.100.44&quot;
+| KEEP @timestamp, event.category, user.name, bank.upi_vpa, bank.amount_inr, http.response.status_code
+| SORT @timestamp asc
+| LIMIT 100</code></pre></div>
+<div class="spacer"></div>
+<h3 class="subsection-title">Query 3: Compute ₹ Financial Exposure by Customer Tier</h3>
+<div class="code-container"><div class="code-header">esql</div><pre><code>FROM logs-banking-*
+| WHERE event.type == &quot;transaction&quot; AND bank.batch_id == &quot;BATCH-20260902-8821&quot;
+| STATS 
+    total_amount = sum(bank.amount_inr),
+    tx_count = count(),
+    avg_aml_risk = avg(bank.aml_risk_score)
+  BY bank.customer_tier</code></pre></div>
+<div class="spacer"></div>
+<hr class="divider"/>
+<div class="spacer"></div>
+<h2 class="section-title">4. The 6-Step Agentic Workflow Specification</h2>
+<div class="spacer"></div>
+<div class="code-container"><div class="code-header">mermaid</div><pre><code>graph TD
+    Trigger[&quot;Attack Discovery Alert Trigger&quot;] --&gt; S1[&quot;Step 1: Incident Classification &amp; Materiality Check&quot;]
+    S1 --&gt; S2[&quot;Step 2: Grounded Evidence Retrieval (ES|QL)&quot;]
+    S2 --&gt; S3[&quot;Step 3: ₹ Business Exposure Lookup (bank.exposure.lookup)&quot;]
+    S3 --&gt; S4[&quot;Step 4: Containment Action Drafting + HITL Gate&quot;]
+    S4 --&gt; S5[&quot;Step 5: CERT-In Annexure-1 Report Draft (certin.report.draft)&quot;]
+    S5 --&gt; S6[&quot;Step 6: Cryptographic Evidence Sealing (evidence.ledger.append)&quot;]</code></pre></div>
+<div class="spacer"></div>
+<h3 class="subsection-title">Step 1: Materiality & Regulatory Classification</h3>
+<li class="bullet-item"><strong>Input</strong>: Attack Discovery Narrative object (<code class="inline-code">narrative_id</code>, <code class="inline-code">threat_category</code>, <code class="inline-code">affected_entities</code>).</li>
+<li class="bullet-item"><strong>Logic</strong>: Evaluates against <strong>RBI Cyber Security Framework</strong> & <strong>CERT-In 2022 Guidelines</strong>:</li>
+<p class="paragraph">  - Direct financial risk $> ₹5,00,000$ (Material).</p>
+<p class="paragraph">  - Outage of critical payment system (UPI/IMPS/RTGS) $> 15$ minutes (Material).</p>
+<p class="paragraph">  - Customer PII/KYC data exfiltration $> 100$ records (Material).</p>
+<li class="bullet-item"><strong>Output</strong>: <code class="inline-code">is_material: true</code>, <code class="inline-code">regulatory_clock_limit_hours: 6</code>, <code class="inline-code">mitre_tactics: ["Initial Access", "Privilege Escalation"]</code>.</li>
+<div class="spacer"></div>
+<h3 class="subsection-title">Step 2: Grounded Evidence Retrieval via ES|QL</h3>
+<li class="bullet-item"><strong>Input</strong>: Indicators of Compromise (IoCs) from Step 1 (<code class="inline-code">source.ip</code>, <code class="inline-code">user.name</code>, <code class="inline-code">batch_id</code>).</li>
+<li class="bullet-item"><strong>Tool</strong>: <code class="inline-code">generate_esql</code> executes targeted piped queries against Elasticsearch.</li>
+<li class="bullet-item"><strong>Output</strong>: Forensic timeline table with query signatures and exact document counts.</li>
+<div class="spacer"></div>
+<h3 class="subsection-title">Step 3: ₹ Business Risk Scoring (<code class="inline-code">bank.exposure.lookup</code>)</h3>
+<li class="bullet-item"><strong>Input</strong>: Compromised accounts and transaction batch IDs.</li>
+<li class="bullet-item"><strong>Logic</strong>: Queries Core Banking CRM:</li>
+<p class="paragraph">  - Total funds exposed in active batch.</p>
+<p class="paragraph">  - Number of HNI vs Corporate vs Retail customers affected.</p>
+<p class="paragraph">  - AML risk rating and velocity anomaly score.</p>
+<li class="bullet-item"><strong>Output</strong>:</li>
+<p class="paragraph">  ```json</p>
+<p class="paragraph">  {</p>
+<p class="paragraph">    "direct_exposure_inr": 18240000.00,</p>
+<p class="paragraph">    "blast_radius_accounts": 18,</p>
+<p class="paragraph">    "hni_count": 14,</p>
+<p class="paragraph">    "corporate_count": 4,</p>
+<p class="paragraph">    "rbi_penalty_exposure_inr": 10000000.00,</p>
+<p class="paragraph">    "risk_level": "CRITICAL"</p>
+<p class="paragraph">  }</p>
+<p class="paragraph">  ```</p>
+<div class="spacer"></div>
+<h3 class="subsection-title">Step 4: Containment Action & Human-in-the-Loop Gate</h3>
+<li class="bullet-item"><strong>Input</strong>: Identified root-cause entities (rogue API token, compromised IP, malicious VPA).</li>
+<li class="bullet-item"><strong>Proposed Actions</strong>:</li>
+<p class="paragraph">  1. Revoke API Gateway OAuth2 Bearer Token <code class="inline-code">#8821</code>.</p>
+<p class="paragraph">  2. Null-route malicious external IP <code class="inline-code">198.51.100.44</code> on Palo Alto Firewall.</p>
+<p class="paragraph">  3. Freeze pending payout batch <code class="inline-code">BATCH-20260902-8821</code> in NPCI UPI Switch.</p>
+<li class="bullet-item"><strong>Interaction</strong>: Renders an interactive approval dialog in the SOC Cockpit.</li>
+<li class="bullet-item"><strong>Output</strong>: Analyst digital approval timestamp, analyst ID, and execution status.</li>
+<div class="spacer"></div>
+<h3 class="subsection-title">Step 5: Official CERT-In Report Generation (<code class="inline-code">certin.report.draft</code>)</h3>
+<li class="bullet-item"><strong>Format</strong>: Conforms to <strong>CERT-In Incident Reporting Form (Annexure 1)</strong>:</li>
+<p class="paragraph">  - 1. Name of Organisation / Bank</p>
+<p class="paragraph">  - 2. Contact Details of CISO / Nodal Officer</p>
+<p class="paragraph">  - 3. Date & Time of Incident Detection (Timestamp of Alert Zero)</p>
+<p class="paragraph">  - 4. Affected Systems & IP Addresses</p>
+<p class="paragraph">  - 5. Nature & Description of Incident (MITRE ATT&CK breakdown)</p>
+<p class="paragraph">  - 6. Chronology of Events (ES|QL query-backed timeline)</p>
+<p class="paragraph">  - 7. Rupee Loss / Financial Exposure</p>
+<p class="paragraph">  - 8. Containment Measures Taken (Action signed by analyst)</p>
+<li class="bullet-item"><strong>Sarvam AI Integration</strong>: Translates Executive Summary into selected Indic language.</li>
+<li class="bullet-item"><strong>Output</strong>: Markdown and PDF artifacts.</li>
+<div class="spacer"></div>
+<h3 class="subsection-title">Step 6: Cryptographic Evidence Ledger (<code class="inline-code">evidence.ledger.append</code>)</h3>
+<li class="bullet-item"><strong>Structure</strong>:</li>
+<p class="paragraph">  ```json</p>
+<p class="paragraph">  {</p>
+<p class="paragraph">    "block_height": 104,</p>
+<p class="paragraph">    "timestamp": "2026-09-02T19:28:44.120Z",</p>
+<p class="paragraph">    "incident_id": "INC-2026-0902-01",</p>
+<p class="paragraph">    "step_name": "CONTAINMENT_APPROVED",</p>
+<p class="paragraph">    "data_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",</p>
+<p class="paragraph">    "previous_hash": "a591a6d40bf420404a011733cfb7b190d62c65bf0bcda32b57b277d9ad9f146e",</p>
+<p class="paragraph">    "current_hash": "7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069",</p>
+<p class="paragraph">    "kms_signature": "arn:aws:kms:ap-south-1:123456789:key/vigil-ledger-sign"</p>
+<p class="paragraph">  }</p>
+<p class="paragraph">  ```</p>
+<li class="bullet-item"><strong>Verification API</strong>: <code class="inline-code">/api/ledger/verify</code> validates the entire hash chain from Block 0 to N.</li>
+<div class="spacer"></div>
+<hr class="divider"/>
+<div class="spacer"></div>
+<h2 class="section-title">5. Mock / Dual-Mode Engine Architecture</h2>
+<div class="spacer"></div>
+<p class="paragraph">To ensure zero dependencies during team development and rock-solid demo performance:</p>
+<li class="bullet-item">When <code class="inline-code">USE_LIVE_ELASTIC=false</code> or keys are missing:</li>
+<p class="paragraph">  - Uses high-fidelity in-memory SQLite / Python ES|QL parser loaded with the 30-day banking corpus.</p>
+<li class="bullet-item">When <code class="inline-code">USE_LIVE_BEDROCK=false</code>:</li>
+<p class="paragraph">  - Uses the built-in deterministic reasoning engine that generates authentic regulatory narratives.</p>
+<li class="bullet-item">When <code class="inline-code">USE_LIVE_SARVAM=false</code>:</li>
+<p class="paragraph">  - Uses pre-translated multi-lingual dictionary matrix covering Hindi, Tamil, Telugu, Marathi, and Kannada.</p>
+<li class="bullet-item"><strong>Switching to Live Production</strong>: Simply update <code class="inline-code">.env</code> with credentials; no code changes required.</li>
+<div class="spacer"></div>
+<hr class="divider"/>
+<div class="spacer"></div>
+<h2 class="section-title">6. Frontend SOC Cockpit Wireframe & UX Spec</h2>
+<div class="spacer"></div>
+<div class="code-container"><div class="code-header">code</div><pre><code>┌────────────────────────────────────────────────────────────────────────────────────────┐
+│ [🛡️ VIGIL - AI Tier-1 SOC Analyst] [Bank: Apex Commercial Bank]  [⏰ 05h 42m remaining]│
+├───────────────────────────────────────────────────────────┬────────────────────────────┤
+│ 🚨 ATTACK DISCOVERY STREAM (Alert Zero)                   │ 💰 ₹ FINANCIAL EXPOSURE    │
+│ • [CRITICAL] UPI Batch Exfiltration via Stolen API Token  │ Direct Risk: ₹ 1,82,40,000 │
+│ • [MEDIUM] Distributed Credential Stuffing (NetBanking)   │ Blast Radius: 18 Accounts  │
+│ • [LOW] False Positive: Batch Rebalance (Auto-Filtered)   │ RBI Materiality: MANDATORY │
+├───────────────────────────────────────────────────────────┴────────────────────────────┤
+│ ⚡ 6-STEP AGENTIC INVESTIGATION WORKFLOW                                               │
+│ [1. Classify] ➔ [2. ES|QL Evidence] ➔ [3. ₹ Exposure] ➔ [4. Containment] ➔ [5. Report]│
+│                                                                                        │
+│ 🔍 Active Step: 4. Containment Authorization (Human-in-the-Loop)                      │
+│ Proposed Action: Revoke Bearer Token #8821 &amp; Freeze UPI Batch BATCH-20260902-8821     │
+│ [ 🛑 REJECT ACTION ]                        [ ✅ APPROVE &amp; SEAL EVIDENCE LEDGER ]      │
+├─────────────────────────────────────────────┬──────────────────────────────────────────┤
+│ 📊 ES|QL QUERY INSPECTOR                    │ 📄 CERT-In ANNEXURE-1 INCIDENT REPORT    │
+│ FROM logs-banking-*                         │ Status: Draft Generated | 100% Grounded │
+│ | WHERE bank.batch_id == &quot;BATCH-8821&quot;       │ Language: [ English ▼ ] [ Hindi ] [Tamil]│
+│ | STATS sum(bank.amount_inr)                │ [ 📥 Download Official CERT-In PDF ]     │
+│ Result: 18 rows | Execution Time: 12ms      │ [ 🔐 Verify SHA-256 Ledger Integrity ]   │
+└─────────────────────────────────────────────┴──────────────────────────────────────────┘</code></pre></div>
+<div class="spacer"></div>
+<hr class="divider"/>
+<div class="spacer"></div>
+<h2 class="section-title">7. Step-by-Step Implementation Roadmap for the Team</h2>
+<div class="spacer"></div>
+<div class="numbered-item"><span class="num-badge">1</span><span><strong>Milestone 1: Backend Foundation & Synthetic Data (Day 1-2)</strong></span></div>
+<p class="paragraph">   - Implement <code class="inline-code">backend/data/telemetry_generator.py</code> and <code class="inline-code">mock_bank_db.py</code>.</p>
+<p class="paragraph">   - Implement <code class="inline-code">backend/elastic/esql_engine.py</code> and query routes.</p>
+<div class="spacer"></div>
+<div class="numbered-item"><span class="num-badge">2</span><span><strong>Milestone 2: 6-Step Agentic Workflow & Tools (Day 2-3)</strong></span></div>
+<p class="paragraph">   - Build <code class="inline-code">step1</code> through <code class="inline-code">step6</code> modules.</p>
+<p class="paragraph">   - Build <code class="inline-code">bank.exposure.lookup</code> and <code class="inline-code">certin.report.draft</code> generators.</p>
+<p class="paragraph">   - Implement <code class="inline-code">evidence.ledger.append</code> with SHA-256 hashing.</p>
+<div class="spacer"></div>
+<div class="numbered-item"><span class="num-badge">3</span><span><strong>Milestone 3: Frontend SOC Cockpit UI (Day 3-4)</strong></span></div>
+<p class="paragraph">   - Initialize Vite + React + Tailwind frontend.</p>
+<p class="paragraph">   - Build Header (6-hour timer), Incident Stream, ₹ Exposure Card, Workflow stepper, and ES|QL inspector.</p>
+<p class="paragraph">   - Build HITL modal, CERT-In viewer, and Sarvam language switcher.</p>
+<div class="spacer"></div>
+<div class="numbered-item"><span class="num-badge">4</span><span><strong>Milestone 4: End-to-End Integration & Polish (Day 4-5)</strong></span></div>
+<p class="paragraph">   - Connect frontend to backend REST / WebSocket.</p>
+<p class="paragraph">   - Test all 5 attack scenarios (including FP suppression).</p>
+<p class="paragraph">   - Generate sample CERT-In PDFs and verify ledger hashes.</p>
+<div class="spacer"></div>
+
+<div class="footer-note">
+  <strong>VIGIL — Forge the Future Hackathon 2026</strong> | Confidential & Proprietary Team Blueprint | Track 03: Security & AI-Powered SOC
+</div>
+
+</body>
+</html>

@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: vigil-backend
+    runtime: python
+    plan: free
+    region: singapore
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: ELASTIC_CLOUD_ID
+        sync: false
+      - key: ELASTIC_API_KEY
+        sync: false
+      - key: USE_LIVE_ELASTIC
+        value: "true"

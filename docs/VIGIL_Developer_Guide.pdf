@@ -1,0 +1,2163 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R 5 0 R 7 0 R 9 0 R] /Count 4 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R
+/MediaBox [0 0 595.28 841.89]
+/Resources <<
+  /Font <<
+    /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+    /F2 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+    /F3 << /Type /Font /Subtype /Type1 /BaseFont /Courier >>
+  >>
+>>
+/Contents 4 0 R >>
+endobj
+4 0 obj
+<< /Length 7409 >>
+stream
+
+q
+0.06 0.09 0.16 rg
+34.0 749.89 527.28 58.0 re f
+0.01 0.52 0.78 RG 1.5 w
+34.0 749.89 527.28 58.0 re S
+Q
+
+q
+0.12 0.16 0.24 rg
+44.0 790.89 102 11 re f
+152.0 790.89 72 11 re f
+229.0 790.89 60 11 re f
+0.22 0.74 0.97 rg
+BT
+/F2 5.5 Tf
+48.0 794.39 Td
+(ELASTIC SEARCH AI) Tj
+ET
+0.06 0.73 0.51 rg
+BT
+/F2 5.5 Tf
+156.0 794.39 Td
+(AWS BEDROCK) Tj
+ET
+0.66 0.33 0.97 rg
+BT
+/F2 5.5 Tf
+233.0 794.39 Td
+(SARVAM AI) Tj
+ET
+Q
+
+q
+1 1 1 rg
+BT
+/F2 13.5 Tf
+44.0 773.89 Td
+(VIGIL: Developer & Engineering Blueprint) Tj
+ET
+0.58 0.64 0.72 rg
+BT
+/F1 7.2 Tf
+44.0 760.89 Td
+(Technical Implementation Blueprint for AI Tier-1 SOC Analyst for Indian BFSI) Tj
+ET
+Q
+
+q
+0.01 0.52 0.78 rg
+34.0 731.89 3 10 re f
+0.06 0.09 0.16 rg
+BT
+/F2 9.5 Tf
+41.0 732.89 Td
+(1. Executive Summary & Core Architectural Tenets) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 7.5 Tf
+34.0 720.39 Td
+(Under CERT-In Directions \(April 2022\) and the RBI Cyber Security Framework, Indian banks must detect, investigate, contain, and report) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 7.5 Tf
+34.0 711.015 Td
+(material cyber incidents within a mandatory 6-hour regulatory window. VIGIL bridges Alert Zero \(triage\) to Filing Zero \(compliance\) by) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 7.5 Tf
+34.0 701.64 Td
+(converting Attack Discovery narratives into rupee-quantified business risk, drafting CERT-In Annexure-1 reports in under 10 minutes, and) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 7.5 Tf
+34.0 692.265 Td
+(sealing evidence into an immutable SHA-256 hash-chained ledger.) Tj
+ET
+Q
+
+q
+0.01 0.52 0.78 rg
+34.0 678.39 3 10 re f
+0.06 0.09 0.16 rg
+BT
+/F2 9.5 Tf
+41.0 679.39 Td
+(2. System Architecture & Component Interaction Flow) Tj
+ET
+Q
+
+q
+0.06 0.09 0.16 rg
+34.0 600.89 527.28 73.5 re f
+0.12 0.16 0.24 RG 0.8 w
+34.0 600.89 527.28 73.5 re S
+0.12 0.16 0.24 rg
+34.0 663.39 527.28 11 re f
+0.58 0.64 0.72 rg
+BT
+/F2 5.5 Tf
+40.0 666.39 Td
+(ARCHITECTURE PIPELINE) Tj
+ET
+Q
+
+q
+0.88 0.91 0.94 rg
+BT
+/F3 6.5 Tf
+42.0 656.39 Td
+([1. Ingestion \(ECS\)]        --> [2. Elastic Search AI Core] --> [3. Vigil 6-Step Orchestrator]) Tj
+ET
+Q
+
+q
+0.88 0.91 0.94 rg
+BT
+/F3 6.5 Tf
+42.0 647.89 Td
+(- UPI/IMPS Gateway Logs           - Unified ECS v8.11+ Index          - Step 1: Materiality Classifier) Tj
+ET
+Q
+
+q
+0.88 0.91 0.94 rg
+BT
+/F3 6.5 Tf
+42.0 639.39 Td
+(- Core Banking CRM Accounts       - Elastic ML Anomaly Baseline       - Step 2: ES|QL Evidence Query) Tj
+ET
+Q
+
+q
+0.88 0.91 0.94 rg
+BT
+/F3 6.5 Tf
+42.0 630.89 Td
+(- Elastic Defend Endpoint         - Attack Discovery Triage Agent     - Step 3: INR Financial Exposure) Tj
+ET
+Q
+
+q
+0.88 0.91 0.94 rg
+BT
+/F3 6.5 Tf
+42.0 622.39 Td
+(- NetFlow & CERT-In CIAD          - Piped ES|QL Query Engine          - Step 4: Containment \(HITL Gate\)) Tj
+ET
+Q
+
+q
+0.88 0.91 0.94 rg
+BT
+/F3 6.5 Tf
+42.0 613.89 Td
+(                                                                      - Step 5: CERT-In Form & Sarvam) Tj
+ET
+Q
+
+q
+0.88 0.91 0.94 rg
+BT
+/F3 6.5 Tf
+42.0 605.39 Td
+(                                                                      - Step 6: SHA-256 Ledger Sealing) Tj
+ET
+Q
+
+q
+0.01 0.52 0.78 rg
+34.0 585.89 3 10 re f
+0.06 0.09 0.16 rg
+BT
+/F2 9.5 Tf
+41.0 586.89 Td
+(3. Telemetry & ECS Schema Specification \(BFSI Extensions\)) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 7.5 Tf
+34.0 574.39 Td
+(All banking and cyber telemetry conforms to Elastic Common Schema \(ECS v8.11+\), augmented with custom BFSI fields under 'bank.*':) Tj
+ET
+Q
+
+q
+0.95 0.96 0.98 rg
+34.0 558.015 527.28 12.5 re f
+0.88 0.91 0.94 RG 0.6 w
+34.0 445.515 527.28 125.0 re S
+Q
+
+q
+0.06 0.09 0.16 rg
+BT
+/F2 6.8 Tf
+38.0 561.515 Td
+(ECS Field) Tj
+ET
+Q
+
+q
+0.06 0.09 0.16 rg
+BT
+/F2 6.8 Tf
+132.91039999999998 561.515 Td
+(Type) Tj
+ET
+Q
+
+q
+0.06 0.09 0.16 rg
+BT
+/F2 6.8 Tf
+175.09279999999998 561.515 Td
+(Example Value) Tj
+ET
+Q
+
+q
+0.06 0.09 0.16 rg
+BT
+/F2 6.8 Tf
+333.2768 561.515 Td
+(Description) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+38.0 549.015 Td
+(@timestamp) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+132.91039999999998 549.015 Td
+(date) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+175.09279999999998 549.015 Td
+(2026-09-02T19:24:00.120Z) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+333.2768 549.015 Td
+(Event occurrence timestamp \(ISO 8601\)) Tj
+ET
+Q
+
+q
+0.98 0.99 1.0 rg
+34.0 533.015 527.28 12.5 re f
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+38.0 536.515 Td
+(event.category) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+132.91039999999998 536.515 Td
+(keyword) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+175.09279999999998 536.515 Td
+(network, authentication, financial) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+333.2768 536.515 Td
+(High-level event classification) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+38.0 524.015 Td
+(source.ip) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+132.91039999999998 524.015 Td
+(ip) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+175.09279999999998 524.015 Td
+(198.51.100.44) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+333.2768 524.015 Td
+(Source IP of the transacting client / attacker) Tj
+ET
+Q
+
+q
+0.98 0.99 1.0 rg
+34.0 508.015 527.28 12.5 re f
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+38.0 511.515 Td
+(user.name) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+132.91039999999998 511.515 Td
+(keyword) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+175.09279999999998 511.515 Td
+(svc_payment_gw) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+333.2768 511.515 Td
+(Authenticated identity or service account) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+38.0 499.015 Td
+(bank.account_id) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+132.91039999999998 499.015 Td
+(keyword) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+175.09279999999998 499.015 Td
+(ACC-CORP-9921448) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+333.2768 499.015 Td
+(Core banking primary account identifier) Tj
+ET
+Q
+
+q
+0.98 0.99 1.0 rg
+34.0 483.015 527.28 12.5 re f
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+38.0 486.515 Td
+(bank.customer_tier) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+132.91039999999998 486.515 Td
+(keyword) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+175.09279999999998 486.515 Td
+(Corporate / HNI / Retail) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+333.2768 486.515 Td
+(Account priority & regulatory weighting tier) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+38.0 474.015 Td
+(bank.upi_vpa) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+132.91039999999998 474.015 Td
+(keyword) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+175.09279999999998 474.015 Td
+(merchant.bulk@yesbank) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+333.2768 474.015 Td
+(UPI Virtual Payment Address of transacting party) Tj
+ET
+Q
+
+q
+0.98 0.99 1.0 rg
+34.0 458.015 527.28 12.5 re f
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+38.0 461.515 Td
+(bank.amount_inr) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+132.91039999999998 461.515 Td
+(float) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+175.09279999999998 461.515 Td
+(18240000.00) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+333.2768 461.515 Td
+(Rupee value of transaction or settlement batch) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+38.0 449.015 Td
+(bank.aml_risk_score) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+132.91039999999998 449.015 Td
+(float) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+175.09279999999998 449.015 Td
+(92.5) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+333.2768 449.015 Td
+(Real-time AML velocity & anomaly score \(0-100\)) Tj
+ET
+Q
+
+q
+0.88 0.91 0.94 RG 0.5 w
+34.0 24 m 561.28 24 l S
+0.6 0.65 0.75 rg
+BT
+/F1 7 Tf
+34.0 14 Td
+(Confidential & Proprietary - Forge the Future Hackathon 2026 | Elastic Technologies & AWS) Tj
+531.28 14 Td
+(Page 1) Tj
+ET
+Q
+
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R
+/MediaBox [0 0 595.28 841.89]
+/Resources <<
+  /Font <<
+    /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+    /F2 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+    /F3 << /Type /Font /Subtype /Type1 /BaseFont /Courier >>
+  >>
+>>
+/Contents 6 0 R >>
+endobj
+6 0 obj
+<< /Length 5313 >>
+stream
+
+q
+0.01 0.52 0.78 rg
+34.0 797.89 3 10 re f
+0.06 0.09 0.16 rg
+BT
+/F2 9.5 Tf
+41.0 798.89 Td
+(4. Five Ground-Truth Attack Scenarios \(30-Day Evaluation Corpus\)) Tj
+ET
+Q
+
+q
+0.98 0.99 1.0 rg
+34.0 751.89 527.28 42.0 re f
+0.85 0.90 0.95 RG 0.8 w
+34.0 751.89 527.28 42.0 re S
+0.01 0.52 0.78 rg
+BT
+/F2 7.2 Tf
+40.0 783.89 Td
+(Scenario 1: Privileged Token Theft & Bulk UPI Payout) Tj
+ET
+0.9 0.2 0.2 rg
+BT
+/F2 6 Tf
+314.0 783.89 Td
+(CRITICAL | Exp: Rs. 1,82,40,000 | RBI: MANDATORY) Tj
+ET
+0.25 0.30 0.38 rg
+BT
+/F1 6.8 Tf
+40.0 772.89 Td
+(Adversary compromises API Gateway -> Steals OAuth2 bearer token for svc_payment_gw -> Injects unauthorized corporat) Tj
+40.0 763.89 Td
+(e payroll batch BATCH-8821 targeting 18 rogue VPAs across 4 Corporate and 14 HNI accounts.) Tj
+ET
+Q
+
+q
+0.98 0.99 1.0 rg
+34.0 704.89 527.28 42.0 re f
+0.85 0.90 0.95 RG 0.8 w
+34.0 704.89 527.28 42.0 re S
+0.01 0.52 0.78 rg
+BT
+/F2 7.2 Tf
+40.0 736.89 Td
+(Scenario 2: Distributed NetBanking Credential Stuffing) Tj
+ET
+0.9 0.2 0.2 rg
+BT
+/F2 6 Tf
+314.0 736.89 Td
+(HIGH | Exp: Rs. 42,50,000 | RBI: MANDATORY) Tj
+ET
+0.25 0.30 0.38 rg
+BT
+/F1 6.8 Tf
+40.0 725.89 Td
+(Tor/VPN botnet executes 4,200 req/min credential stuffing attack against /api/v2/netbanking/login -> Compromises 28) Tj
+40.0 716.89 Td
+( corporate salary accounts -> Initiates high-velocity illicit IMPS exfiltration.) Tj
+ET
+Q
+
+q
+0.98 0.99 1.0 rg
+34.0 657.89 527.28 42.0 re f
+0.85 0.90 0.95 RG 0.8 w
+34.0 657.89 527.28 42.0 re S
+0.01 0.52 0.78 rg
+BT
+/F2 7.2 Tf
+40.0 689.89 Td
+(Scenario 3: ATM Switch ISO 8583 Response Code Manipulation) Tj
+ET
+0.9 0.2 0.2 rg
+BT
+/F2 6 Tf
+314.0 689.89 Td
+(CRITICAL | Exp: Rs. 3,40,000 | RBI: MANDATORY) Tj
+ET
+0.25 0.30 0.38 rg
+BT
+/F1 6.8 Tf
+40.0 678.89 Td
+(Lateral movement in branch network -> ARP poisoning on ATM switch router -> Modifies ISO 8583 response codes from 5) Tj
+40.0 669.89 Td
+(1 \(Insufficient Funds\) to 00 \(Approved\) for 12 regional ATM terminals.) Tj
+ET
+Q
+
+q
+0.98 0.99 1.0 rg
+34.0 610.89 527.28 42.0 re f
+0.85 0.90 0.95 RG 0.8 w
+34.0 610.89 527.28 42.0 re S
+0.01 0.52 0.78 rg
+BT
+/F2 7.2 Tf
+40.0 642.89 Td
+(Scenario 4: Rogue Branch Insider KYC Tampering) Tj
+ET
+0.9 0.2 0.2 rg
+BT
+/F2 6 Tf
+314.0 642.89 Td
+(HIGH | Exp: Rs. 28,00,000 | RBI: MANDATORY) Tj
+ET
+0.25 0.30 0.38 rg
+BT
+/F1 6.8 Tf
+40.0 631.89 Td
+(Branch loan officer terminal used off-hours -> Modifies KYC verification flag on 12 unapproved loan applications ->) Tj
+40.0 622.89 Td
+( Triggers automated personal loan disbursal pipeline.) Tj
+ET
+Q
+
+q
+0.98 0.99 1.0 rg
+34.0 563.89 527.28 42.0 re f
+0.85 0.90 0.95 RG 0.8 w
+34.0 563.89 527.28 42.0 re S
+0.01 0.52 0.78 rg
+BT
+/F2 7.2 Tf
+40.0 595.89 Td
+(Scenario 5: Benign Month-End Batch Rebalancing) Tj
+ET
+0.9 0.2 0.2 rg
+BT
+/F2 6 Tf
+314.0 595.89 Td
+(BENIGN | Exp: Rs. 0 \(Auto-Filtered\) | RBI: NOT REQUIRED) Tj
+ET
+0.25 0.30 0.38 rg
+BT
+/F1 6.8 Tf
+40.0 584.89 Td
+(Scheduled monthly corporate interest calculation batch generates high CPU load and 50k ledger transactions at 02:00) Tj
+40.0 575.89 Td
+( AM -> Accurately correlated with maintenance calendar and auto-suppressed \(60% FP Reduction\).) Tj
+ET
+Q
+
+q
+0.01 0.52 0.78 rg
+34.0 548.89 3 10 re f
+0.06 0.09 0.16 rg
+BT
+/F2 9.5 Tf
+41.0 549.89 Td
+(5. ES|QL Forensic Query Catalogue) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 7.5 Tf
+34.0 537.39 Td
+(Vigil leverages modern ES|QL piped queries for sub-second evidence retrieval and blast radius quantification:) Tj
+ET
+Q
+
+q
+0.06 0.09 0.16 rg
+34.0 477.015 527.28 56.5 re f
+0.12 0.16 0.24 RG 0.8 w
+34.0 477.015 527.28 56.5 re S
+0.12 0.16 0.24 rg
+34.0 522.515 527.28 11 re f
+0.58 0.64 0.72 rg
+BT
+/F2 5.5 Tf
+40.0 525.515 Td
+(QUERY 1: ATTACKER IP BLAST RADIUS ACROSS AUTH & UPI) Tj
+ET
+Q
+
+q
+0.88 0.91 0.94 rg
+BT
+/F3 6.5 Tf
+42.0 515.515 Td
+(FROM logs-*) Tj
+ET
+Q
+
+q
+0.88 0.91 0.94 rg
+BT
+/F3 6.5 Tf
+42.0 507.015 Td
+(| WHERE source.ip == "198.51.100.44") Tj
+ET
+Q
+
+q
+0.88 0.91 0.94 rg
+BT
+/F3 6.5 Tf
+42.0 498.515 Td
+(| KEEP @timestamp, event.category, user.name, bank.upi_vpa, bank.amount_inr, http.response.status_code) Tj
+ET
+Q
+
+q
+0.88 0.91 0.94 rg
+BT
+/F3 6.5 Tf
+42.0 490.015 Td
+(| SORT @timestamp asc) Tj
+ET
+Q
+
+q
+0.88 0.91 0.94 rg
+BT
+/F3 6.5 Tf
+42.0 481.515 Td
+(| LIMIT 100) Tj
+ET
+Q
+
+q
+0.06 0.09 0.16 rg
+34.0 424.015 527.28 48.0 re f
+0.12 0.16 0.24 RG 0.8 w
+34.0 424.015 527.28 48.0 re S
+0.12 0.16 0.24 rg
+34.0 461.015 527.28 11 re f
+0.58 0.64 0.72 rg
+BT
+/F2 5.5 Tf
+40.0 464.015 Td
+(QUERY 2: FINANCIAL RISK AGGREGATION BY CUSTOMER TIER) Tj
+ET
+Q
+
+q
+0.88 0.91 0.94 rg
+BT
+/F3 6.5 Tf
+42.0 454.015 Td
+(FROM logs-banking-*) Tj
+ET
+Q
+
+q
+0.88 0.91 0.94 rg
+BT
+/F3 6.5 Tf
+42.0 445.515 Td
+(| WHERE event.type == "transaction" AND bank.batch_id == "BATCH-20260902-8821") Tj
+ET
+Q
+
+q
+0.88 0.91 0.94 rg
+BT
+/F3 6.5 Tf
+42.0 437.015 Td
+(| STATS total_amount_inr = sum\(bank.amount_inr\), tx_count = count\(\), avg_aml = avg\(bank.aml_risk_score\) BY bank.customer_tier) Tj
+ET
+Q
+
+q
+0.88 0.91 0.94 rg
+BT
+/F3 6.5 Tf
+42.0 428.515 Td
+(| SORT total_amount_inr desc) Tj
+ET
+Q
+
+q
+0.6 0.65 0.75 rg
+BT
+/F1 7 Tf
+34.0 821.89 Td
+(VIGIL: Comprehensive Developer & Engineering Blueprint | Track 03: Security & AI-Powered SOC) Tj
+ET
+0.88 0.91 0.94 RG 0.5 w
+34.0 817.89 m 561.28 817.89 l S
+Q
+
+q
+0.88 0.91 0.94 RG 0.5 w
+34.0 24 m 561.28 24 l S
+0.6 0.65 0.75 rg
+BT
+/F1 7 Tf
+34.0 14 Td
+(Confidential & Proprietary - Forge the Future Hackathon 2026 | Elastic Technologies & AWS) Tj
+531.28 14 Td
+(Page 2) Tj
+ET
+Q
+
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R
+/MediaBox [0 0 595.28 841.89]
+/Resources <<
+  /Font <<
+    /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+    /F2 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+    /F3 << /Type /Font /Subtype /Type1 /BaseFont /Courier >>
+  >>
+>>
+/Contents 8 0 R >>
+endobj
+8 0 obj
+<< /Length 7170 >>
+stream
+
+q
+0.01 0.52 0.78 rg
+34.0 797.89 3 10 re f
+0.06 0.09 0.16 rg
+BT
+/F2 9.5 Tf
+41.0 798.89 Td
+(6. The 6-Step Deterministic Agentic Workflow Deep Dive) Tj
+ET
+Q
+
+q
+0.01 0.52 0.78 rg
+36.0 788.89 2.5 2.5 re f
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 7.2 Tf
+44.0 786.6899999999999 Td
+(Step 1 \(Materiality & RBI Thresholds\): Evaluates Attack Discovery narrative against RBI Master Direction thresholds \(fund diversion > Rs. 5) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 7.2 Tf
+44.0 777.6899999999999 Td
+(Lakhs, core banking outage > 15m\). Emits materiality flag and 6-hour regulatory countdown.) Tj
+ET
+Q
+
+q
+0.01 0.52 0.78 rg
+36.0 768.89 2.5 2.5 re f
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 7.2 Tf
+44.0 766.6899999999999 Td
+(Step 2 \(ES|QL Grounded Evidence\): Executes piped queries across auth, network, and banking logs. Extracts exact indicators of compromise) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 7.2 Tf
+44.0 757.6899999999999 Td
+(\(IoCs\), compromised credentials, and raw ECS document IDs.) Tj
+ET
+Q
+
+q
+0.01 0.52 0.78 rg
+36.0 748.89 2.5 2.5 re f
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 7.2 Tf
+44.0 746.6899999999999 Td
+(Step 3 \(INR Business Risk Exposure\): bank.exposure.lookup tool queries Core Banking CRM: computes Direct Loss \(Rs. 1.82 Crore\) + Customer Blast) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 7.2 Tf
+44.0 737.6899999999999 Td
+(Radius \(14 HNI, 4 Corp\) + RBI Regulatory Penalty Risk \(Rs. 1.00 Crore\).) Tj
+ET
+Q
+
+q
+0.01 0.52 0.78 rg
+36.0 728.89 2.5 2.5 re f
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 7.2 Tf
+44.0 726.6899999999999 Td
+(Step 4 \(Containment & HITL Approval\): Recommends actionable containment \(Revoke OAuth2 token #8821, null-route IP, freeze UPI batch\). Renders) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 7.2 Tf
+44.0 717.6899999999999 Td
+(1-click Human-in-the-Loop authorization gate before executing.) Tj
+ET
+Q
+
+q
+0.01 0.52 0.78 rg
+36.0 708.89 2.5 2.5 re f
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 7.2 Tf
+44.0 706.6899999999999 Td
+(Step 5 \(CERT-In Annexure-1 Report\): certin.report.draft formats official 8-point statutory report \(Incident chronology, impacted systems,) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 7.2 Tf
+44.0 697.6899999999999 Td
+(remedial actions\). Sarvam AI translates executive brief into 22 Indic languages.) Tj
+ET
+Q
+
+q
+0.01 0.52 0.78 rg
+36.0 688.89 2.5 2.5 re f
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 7.2 Tf
+44.0 686.6899999999999 Td
+(Step 6 \(Cryptographic Evidence Sealing\): evidence.ledger.append SHA-256 hash-chains all telemetry, LLM reasoning, queries, and approvals into) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 7.2 Tf
+44.0 677.6899999999999 Td
+(S3 Object Lock \(WORM\) storage with AWS KMS signing.) Tj
+ET
+Q
+
+q
+0.01 0.52 0.78 rg
+34.0 663.89 3 10 re f
+0.06 0.09 0.16 rg
+BT
+/F2 9.5 Tf
+41.0 664.89 Td
+(7. Complete REST API & WebSocket Specification) Tj
+ET
+Q
+
+q
+0.95 0.96 0.98 rg
+34.0 647.39 527.28 12.5 re f
+0.88 0.91 0.94 RG 0.6 w
+34.0 534.89 527.28 125.0 re S
+Q
+
+q
+0.06 0.09 0.16 rg
+BT
+/F2 6.8 Tf
+38.0 650.89 Td
+(Method) Tj
+ET
+Q
+
+q
+0.06 0.09 0.16 rg
+BT
+/F2 6.8 Tf
+90.72800000000001 650.89 Td
+(Endpoint) Tj
+ET
+Q
+
+q
+0.06 0.09 0.16 rg
+BT
+/F2 6.8 Tf
+238.36640000000003 650.89 Td
+(Functionality) Tj
+ET
+Q
+
+q
+0.06 0.09 0.16 rg
+BT
+/F2 6.8 Tf
+407.096 650.89 Td
+(Payload Summary) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+38.0 638.39 Td
+(GET) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+90.72800000000001 638.39 Td
+(/api/incidents) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+238.36640000000003 638.39 Td
+(List validated attack narratives) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+407.096 638.39 Td
+(Returns active incidents with severity & INR exposure) Tj
+ET
+Q
+
+q
+0.98 0.99 1.0 rg
+34.0 622.39 527.28 12.5 re f
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+38.0 625.89 Td
+(GET) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+90.72800000000001 625.89 Td
+(/api/incidents/{id}) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+238.36640000000003 625.89 Td
+(Get full incident state & workflow) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+407.096 625.89 Td
+(Returns active step, queries, timeline, and exposure card) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+38.0 613.39 Td
+(POST) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+90.72800000000001 613.39 Td
+(/api/incidents/{id}/step/{n}) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+238.36640000000003 613.39 Td
+(Execute specific workflow step) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+407.096 613.39 Td
+(Executes Step 1 to 6 with LLM reasoning & tools) Tj
+ET
+Q
+
+q
+0.98 0.99 1.0 rg
+34.0 597.39 527.28 12.5 re f
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+38.0 600.89 Td
+(POST) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+90.72800000000001 600.89 Td
+(/api/hitl/approve) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+238.36640000000003 600.89 Td
+(Human analyst containment approval) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+407.096 600.89 Td
+(Payload: { incident_id, analyst_id, decision: APPROVE }) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+38.0 588.39 Td
+(POST) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+90.72800000000001 588.39 Td
+(/api/esql/execute) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+238.36640000000003 588.39 Td
+(Run custom ES|QL piped query) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+407.096 588.39 Td
+(Payload: { query: 'FROM logs-* | ...' } -> Returns rows) Tj
+ET
+Q
+
+q
+0.98 0.99 1.0 rg
+34.0 572.39 527.28 12.5 re f
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+38.0 575.89 Td
+(GET) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+90.72800000000001 575.89 Td
+(/api/reports/certin/{id}/pdf) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+238.36640000000003 575.89 Td
+(Download official CERT-In PDF) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+407.096 575.89 Td
+(Returns formatted application/pdf statutory report) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+38.0 563.39 Td
+(POST) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+90.72800000000001 563.39 Td
+(/api/translate/indic) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+238.36640000000003 563.39 Td
+(Translate brief via Sarvam AI) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+407.096 563.39 Td
+(Payload: { text, target_lang: 'hi' } -> Indic text) Tj
+ET
+Q
+
+q
+0.98 0.99 1.0 rg
+34.0 547.39 527.28 12.5 re f
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+38.0 550.89 Td
+(GET) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+90.72800000000001 550.89 Td
+(/api/ledger/verify) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+238.36640000000003 550.89 Td
+(Verify cryptographic hash chain) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+407.096 550.89 Td
+(Returns: { valid: true, total_blocks: 104, chain_intact: true }) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+38.0 538.39 Td
+(WS) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+90.72800000000001 538.39 Td
+(/ws/live-stream) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+238.36640000000003 538.39 Td
+(Real-time incident & countdown stream) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+407.096 538.39 Td
+(Emits WebSocket events on alert arrival & timer ticks) Tj
+ET
+Q
+
+q
+0.6 0.65 0.75 rg
+BT
+/F1 7 Tf
+34.0 821.89 Td
+(VIGIL: Comprehensive Developer & Engineering Blueprint | Track 03: Security & AI-Powered SOC) Tj
+ET
+0.88 0.91 0.94 RG 0.5 w
+34.0 817.89 m 561.28 817.89 l S
+Q
+
+q
+0.88 0.91 0.94 RG 0.5 w
+34.0 24 m 561.28 24 l S
+0.6 0.65 0.75 rg
+BT
+/F1 7 Tf
+34.0 14 Td
+(Confidential & Proprietary - Forge the Future Hackathon 2026 | Elastic Technologies & AWS) Tj
+531.28 14 Td
+(Page 3) Tj
+ET
+Q
+
+endstream
+endobj
+9 0 obj
+<< /Type /Page /Parent 2 0 R
+/MediaBox [0 0 595.28 841.89]
+/Resources <<
+  /Font <<
+    /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+    /F2 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+    /F3 << /Type /Font /Subtype /Type1 /BaseFont /Courier >>
+  >>
+>>
+/Contents 10 0 R >>
+endobj
+10 0 obj
+<< /Length 6746 >>
+stream
+
+q
+0.01 0.52 0.78 rg
+34.0 797.89 3 10 re f
+0.06 0.09 0.16 rg
+BT
+/F2 9.5 Tf
+41.0 798.89 Td
+(8. Frontend SOC Cockpit UI & Component Architecture) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 7.5 Tf
+34.0 786.39 Td
+(The analyst console provides a real-time dark-themed cyber defense cockpit designed for BFSI security operations:) Tj
+ET
+Q
+
+q
+0.95 0.96 0.98 rg
+34.0 770.015 527.28 12.5 re f
+0.88 0.91 0.94 RG 0.6 w
+34.0 695.015 527.28 87.5 re S
+Q
+
+q
+0.06 0.09 0.16 rg
+BT
+/F2 6.8 Tf
+38.0 773.515 Td
+(Component) Tj
+ET
+Q
+
+q
+0.06 0.09 0.16 rg
+BT
+/F2 6.8 Tf
+154.0016 773.515 Td
+(Key Functionality) Tj
+ET
+Q
+
+q
+0.06 0.09 0.16 rg
+BT
+/F2 6.8 Tf
+438.7328 773.515 Td
+(Tech Stack) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+38.0 761.015 Td
+(Header & Countdown) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+154.0016 761.015 Td
+(Live 6-Hour Regulatory Clock countdown timer & Alert Zero status badge) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+438.7328 761.015 Td
+(React, Lucide Icons) Tj
+ET
+Q
+
+q
+0.98 0.99 1.0 rg
+34.0 745.015 527.28 12.5 re f
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+38.0 748.515 Td
+(Incident Stream) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+154.0016 748.515 Td
+(Validated Attack Discovery narratives with FP suppression indicator) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+438.7328 748.515 Td
+(Framer Motion, SSE) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+38.0 736.015 Td
+(INR Exposure Card) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+154.0016 736.015 Td
+(Real-time counter of direct financial risk & HNI/Corporate blast radius) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+438.7328 736.015 Td
+(Tailwind CSS, Cards) Tj
+ET
+Q
+
+q
+0.98 0.99 1.0 rg
+34.0 720.015 527.28 12.5 re f
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+38.0 723.515 Td
+(Workflow Stepper) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+154.0016 723.515 Td
+(Interactive 6-step timeline with reasoning logs & ES|QL viewer) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+438.7328 723.515 Td
+(React Stepper) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+38.0 711.015 Td
+(HITL Approval Modal) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+154.0016 711.015 Td
+(1-Click authorization of token revocation and payment batch freeze) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+438.7328 711.015 Td
+(Modal Dialog) Tj
+ET
+Q
+
+q
+0.98 0.99 1.0 rg
+34.0 695.015 527.28 12.5 re f
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+38.0 698.515 Td
+(CERT-In Report Viewer) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+154.0016 698.515 Td
+(Official Annexure-1 form renderer with 1-click PDF download & Indic toggle) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+438.7328 698.515 Td
+(ReportLab, Sarvam API) Tj
+ET
+Q
+
+q
+0.01 0.52 0.78 rg
+34.0 679.015 3 10 re f
+0.06 0.09 0.16 rg
+BT
+/F2 9.5 Tf
+41.0 680.015 Td
+(9. Developer Setup & Dual-Mode Execution) Tj
+ET
+Q
+
+q
+0.06 0.09 0.16 rg
+34.0 601.515 527.28 73.5 re f
+0.12 0.16 0.24 RG 0.8 w
+34.0 601.515 527.28 73.5 re S
+0.12 0.16 0.24 rg
+34.0 664.015 527.28 11 re f
+0.58 0.64 0.72 rg
+BT
+/F2 5.5 Tf
+40.0 667.015 Td
+(SETUP COMMANDS \(DUAL-MODE: ZERO CLOUD KEYS REQUIRED\)) Tj
+ET
+Q
+
+q
+0.88 0.91 0.94 rg
+BT
+/F3 6.5 Tf
+42.0 657.015 Td
+(# 1. Backend Setup \(Python 3.11\)) Tj
+ET
+Q
+
+q
+0.88 0.91 0.94 rg
+BT
+/F3 6.5 Tf
+42.0 648.515 Td
+(cd backend && python3.11 -m venv venv && source venv/bin/activate) Tj
+ET
+Q
+
+q
+0.88 0.91 0.94 rg
+BT
+/F3 6.5 Tf
+42.0 640.015 Td
+(pip install fastapi uvicorn pydantic reportlab cryptography httpx) Tj
+ET
+Q
+
+q
+0.88 0.91 0.94 rg
+BT
+/F3 6.5 Tf
+42.0 631.515 Td
+(python main.py  # Launches at http://localhost:8000 \(Swagger docs at /docs\)) Tj
+ET
+Q
+
+q
+0.88 0.91 0.94 rg
+BT
+/F3 6.5 Tf
+42.0 623.015 Td
+() Tj
+ET
+Q
+
+q
+0.88 0.91 0.94 rg
+BT
+/F3 6.5 Tf
+42.0 614.515 Td
+(# 2. Frontend Setup \(Node 22 / Vite\)) Tj
+ET
+Q
+
+q
+0.88 0.91 0.94 rg
+BT
+/F3 6.5 Tf
+42.0 606.015 Td
+(cd frontend && npm install && npm run dev  # Launches UI at http://localhost:5173) Tj
+ET
+Q
+
+q
+0.01 0.52 0.78 rg
+34.0 586.515 3 10 re f
+0.06 0.09 0.16 rg
+BT
+/F2 9.5 Tf
+41.0 587.515 Td
+(10. Team Task Allocation & Hackathon Milestones) Tj
+ET
+Q
+
+q
+0.95 0.96 0.98 rg
+34.0 570.015 527.28 12.5 re f
+0.88 0.91 0.94 RG 0.6 w
+34.0 507.515 527.28 75.0 re S
+Q
+
+q
+0.06 0.09 0.16 rg
+BT
+/F2 6.8 Tf
+38.0 573.515 Td
+(Phase) Tj
+ET
+Q
+
+q
+0.06 0.09 0.16 rg
+BT
+/F2 6.8 Tf
+117.092 573.515 Td
+(Focus Area) Tj
+ET
+Q
+
+q
+0.06 0.09 0.16 rg
+BT
+/F2 6.8 Tf
+233.09359999999998 573.515 Td
+(Key Deliverables) Tj
+ET
+Q
+
+q
+0.06 0.09 0.16 rg
+BT
+/F2 6.8 Tf
+459.82399999999996 573.515 Td
+(Owner) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+38.0 561.015 Td
+(Milestone 1) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+117.092 561.015 Td
+(Data & Elastic Core) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+233.09359999999998 561.015 Td
+(30-Day ECS banking corpus + ES|QL query catalogue) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+459.82399999999996 561.015 Td
+(Lead Elastic Architect) Tj
+ET
+Q
+
+q
+0.98 0.99 1.0 rg
+34.0 545.015 527.28 12.5 re f
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+38.0 548.515 Td
+(Milestone 2) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+117.092 548.515 Td
+(Backend & Workflow) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+233.09359999999998 548.515 Td
+(6-Step FastAPI orchestrator + bank.exposure.lookup) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+459.82399999999996 548.515 Td
+(Backend / Bedrock Lead) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+38.0 536.015 Td
+(Milestone 3) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+117.092 536.015 Td
+(Frontend & UX) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+233.09359999999998 536.015 Td
+(Dark-themed SOC Cockpit UI + 6-hour countdown timer) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+459.82399999999996 536.015 Td
+(Frontend / UX Lead) Tj
+ET
+Q
+
+q
+0.98 0.99 1.0 rg
+34.0 520.015 527.28 12.5 re f
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+38.0 523.515 Td
+(Milestone 4) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+117.092 523.515 Td
+(Compliance & AI) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+233.09359999999998 523.515 Td
+(CERT-In PDF exporter + Sarvam Indic + SHA-256 Ledger) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+459.82399999999996 523.515 Td
+(Compliance / AI Lead) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+38.0 511.015 Td
+(Milestone 5) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+117.092 511.015 Td
+(Grand Finale Demo) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+233.09359999999998 511.015 Td
+(End-to-end 90-sec live attack simulation & pitch rehearsal) Tj
+ET
+Q
+
+q
+0.2 0.25 0.33 rg
+BT
+/F1 6.5 Tf
+459.82399999999996 511.015 Td
+(Entire Team) Tj
+ET
+Q
+
+q
+0.6 0.65 0.75 rg
+BT
+/F1 7 Tf
+34.0 821.89 Td
+(VIGIL: Comprehensive Developer & Engineering Blueprint | Track 03: Security & AI-Powered SOC) Tj
+ET
+0.88 0.91 0.94 RG 0.5 w
+34.0 817.89 m 561.28 817.89 l S
+Q
+
+q
+0.88 0.91 0.94 RG 0.5 w
+34.0 24 m 561.28 24 l S
+0.6 0.65 0.75 rg
+BT
+/F1 7 Tf
+34.0 14 Td
+(Confidential & Proprietary - Forge the Future Hackathon 2026 | Elastic Technologies & AWS) Tj
+531.28 14 Td
+(Page 4) Tj
+ET
+Q
+
+endstream
+endobj
+xref
+0 11
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000139 00000 n 
+0000000457 00000 n 
+0000007918 00000 n 
+0000008236 00000 n 
+0000013601 00000 n 
+0000013919 00000 n 
+0000021141 00000 n 
+0000021460 00000 n 
+trailer
+<< /Size 11
+   /Root 1 0 R
+>>
+startxref
+28259
+%%EOF
