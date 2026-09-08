@@ -957,11 +957,27 @@ export default function App() {
     setIsRunning(false);
   };
 
+  const [backendOnline, setBackendOnline] = useState<boolean>(false);
+  const [elasticClusterName, setElasticClusterName] = useState<string>("ap-south-1");
+
+  const API_BASE = ((import.meta as any).env?.VITE_API_URL as string) || "https://vigil-backend-k511.onrender.com";
+
+  // Check Backend & Elastic Cloud Connectivity on mount
+  useEffect(() => {
+    fetch(`${API_BASE}/api/health`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === "HEALTHY") {
+          setBackendOnline(true);
+          if (data.elastic_cluster) setElasticClusterName(data.elastic_cluster);
+        }
+      })
+      .catch(() => setBackendOnline(false));
+  }, [API_BASE]);
+
   const handleApproveContainment = () => {
     setContainmentApproved(true);
   };
-
-  const API_BASE = ((import.meta as any).env?.VITE_API_URL as string) || "";
 
   const handleRunEsql = async () => {
     setIsQuerying(true);
@@ -1163,10 +1179,13 @@ Generated automatically by VIGIL AI Tier-1 SOC Analyst`;
           {/* Elastic Cloud Live Badge */}
           <div className={`hidden md:flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg border font-medium ${
             isDark ? "bg-slate-800/80 border-slate-700 text-slate-300" : "bg-slate-100 border-slate-200 text-slate-700"
-          }`}>
+          }`} title={backendOnline ? "Backend & Elastic Cloud Cluster Connected" : "Connecting to backend..."}>
+            <span className={`h-2 w-2 rounded-full ${backendOnline ? "bg-emerald-400 animate-pulse shadow-sm" : "bg-amber-400"}`} />
             <Database className="h-3.5 w-3.5 text-sky-500" />
             <span>Elastic Cloud</span>
-            <span className="text-[10px] opacity-75 font-mono">(ap-south-1)</span>
+            <span className="text-[10px] text-emerald-400 font-mono font-bold">
+              {backendOnline ? "● Live (ap-south-1)" : "(ap-south-1)"}
+            </span>
           </div>
 
           {/* Theme Toggle Button (Dark / Light) */}

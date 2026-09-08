@@ -57,6 +57,25 @@ if HAS_FASTAPI:
         text: str
         target_lang: str = "hi"
 
+    @app.get("/")
+    def root():
+        cluster_health = elastic_client.cluster_health()
+        return {
+            "status": "ONLINE",
+            "service": "VIGIL AI Tier-1 SOC Backend",
+            "version": "1.0.0",
+            "elastic_cluster": cluster_health.get("cluster_name", "342d4ae4b3c34f17b141a42be3274185"),
+            "elastic_connected": not cluster_health.get("mock", False),
+            "region": "ap-south-1 (Mumbai)",
+            "docs": "/docs",
+            "endpoints": {
+                "health": "/api/health",
+                "incidents": "/api/incidents",
+                "esql_execute": "/api/esql/execute",
+                "certin_pdf": "/api/reports/certin/{incident_id}/pdf"
+            }
+        }
+
     @app.get("/api/health")
     def health_check():
         cluster_health = elastic_client.cluster_health()
