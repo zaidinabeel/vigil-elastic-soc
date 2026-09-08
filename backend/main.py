@@ -168,10 +168,15 @@ if HAS_FASTAPI:
 
     def _background_telemetry_loop():
         time.sleep(5) # Allow server to bind port first
+        iteration = 0
+        render_url = os.getenv("RENDER_EXTERNAL_URL", "https://vigil-backend-k511.onrender.com")
+        
         while True:
+            iteration += 1
             try:
                 from backend.data.live_stream_daemon import generate_noise_batch, generate_attack_pulse
                 import random
+                import urllib.request
                 
                 batch = generate_noise_batch(batch_size=random.randint(8, 16))
                 
@@ -187,6 +192,16 @@ if HAS_FASTAPI:
                     lines.append(json.dumps(d))
                 ndjson_body = "\n".join(lines) + "\n"
                 elastic_client.bulk_index(ndjson_body)
+
+                # Keep-Alive Self Ping every 50 iterations (~5 mins) to prevent Render from sleeping
+                if iteration % 50 == 0 and render_url:
+                    try:
+                        req = urllib.request.Request(f"{render_url}/api/health", headers={"User-Agent": "VigilKeepAlive/1.0"})
+                        with urllib.request.urlopen(req, timeout=5) as res:
+                            pass
+                    except Exception:
+                        pass
+
             except Exception:
                 pass
             time.sleep(6)
