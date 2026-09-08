@@ -1192,11 +1192,11 @@ export function App() {
     }
   };
 
-  // 2-Page Strictly Compliant CERT-In Annexure-1 Binary PDF Generator
+  // Executive 2-Page Official CERT-In Annexure-1 Binary PDF Generator
   const generateClientCertInPdf = (sc: ScenarioConfig): Blob => {
     const w = 595.28; // A4 width in points
     const h = 841.89; // A4 height in points
-    const margin_x = 36.0;
+    const margin_x = 40.0;
     const content_w = w - 2 * margin_x;
 
     const escape = (text: any) =>
@@ -1211,7 +1211,7 @@ export function App() {
 
     const inc_id = sc.incident_id;
     const severity = sc.severity;
-    const category = sc.step1?.certin_category || "CIAD-2022-04 Unauthorized Access & Fraud";
+    const category = sc.step1?.certin_category || "CIAD-2022-04 Unauthorized Access & Payment Gateway Fraud";
     const threat_tactic = sc.threat_tactic;
     const mitre_id = sc.mitre_id;
     const direct_inr = Number(sc.direct_exposure_inr || 0);
@@ -1225,297 +1225,281 @@ export function App() {
     const payment_channel = sc.payment_channel || sc.step3?.account_examples || "Core Banking & Inter-Bank Switch";
     const actions = sc.step4?.actions || [];
 
-    // ---------------- PAGE 1 ----------------
+    // =========================================================================
+    // PAGE 1 STREAM
+    // =========================================================================
     const p1: string[] = [];
-    let y1 = h - 30.0;
+    let y1 = h - 36.0;
 
-    const h_header = 70.0;
+    // Official Top Banner
     p1.push(`q
-0.04 0.08 0.16 rg
-${margin_x} ${y1 - h_header} ${content_w} ${h_header} re f
-0.01 0.52 0.78 RG 1.5 w
-${margin_x} ${y1 - h_header} ${content_w} ${h_header} re S
+% Top Decorative Header Band
+0.08 0.16 0.28 rg
+${margin_x} ${y1 - 62} ${content_w} 62 re f
 
 1 1 1 rg
 BT
-/F2 12 Tf
-${margin_x + 12} ${y1 - 20} Td
+/F2 11 Tf
+${margin_x + 16} ${y1 - 18} Td
 (GOVERNMENT OF INDIA | MINISTRY OF ELECTRONICS & INFORMATION TECHNOLOGY) Tj
 ET
 
-0.22 0.74 0.97 rg
+0.35 0.75 1 rg
 BT
-/F2 13 Tf
-${margin_x + 12} ${y1 - 38} Td
+/F2 13.5 Tf
+${margin_x + 16} ${y1 - 35} Td
 (INDIAN COMPUTER EMERGENCY RESPONSE TEAM (CERT-In)) Tj
 ET
 
-1 1 1 rg
+0.85 0.9 0.98 rg
 BT
-/F2 9.5 Tf
-${margin_x + 12} ${y1 - 52} Td
+/F2 8.5 Tf
+${margin_x + 16} ${y1 - 48} Td
 (CYBER SECURITY INCIDENT REPORTING FORM - ANNEXURE 1) Tj
+/F1 6.5 Tf
+${margin_x + 16} ${y1 - 57} Td
+(Under Section 70B of Information Technology Act, 2000 & CERT-In Directions 2022) Tj
 ET
 
-0.6 0.7 0.82 rg
-BT
-/F1 7.2 Tf
-${margin_x + 12} ${y1 - 64} Td
-(Mandatory statutory reporting under Section 70B of IT Act 2000 & CERT-In Directions F.No. 20\\(3\\)/2022-CERT-In) Tj
-ET
-
-0.85 0.15 0.15 rg
-${w - margin_x - 110} ${y1 - 62} 98 42 re f
+% 6-Hour SLA Badge
+0.8 0.12 0.12 rg
+${w - margin_x - 120} ${y1 - 52} 104 38 re f
 1 1 1 rg
 BT
-/F2 8 Tf
-${w - margin_x - 105} ${y1 - 32} Td
+/F2 7.5 Tf
+${w - margin_x - 114} ${y1 - 25} Td
 (6-HOUR STATUTORY SLA) Tj
 /F1 6.5 Tf
-${w - margin_x - 105} ${y1 - 45} Td
-(STATUS: FILED IN TIME) Tj
-/F2 7 Tf
-${w - margin_x - 105} ${y1 - 56} Td
-(LATENCY: 4.2 MINS) Tj
+${w - margin_x - 114} ${y1 - 36} Td
+(Status: FILED IN TIME) Tj
+/F2 6.5 Tf
+${w - margin_x - 114} ${y1 - 46} Td
+(Elapsed: 4.2 Minutes) Tj
 ET
 Q
 `);
-    y1 -= (h_header + 12);
+    y1 -= 76.0;
 
-    const draw_p1_section = (title_text: string) => {
-      p1.push(`q
-0.01 0.52 0.78 rg
-${margin_x} ${y1 - 12} 3 12 re f
-0.06 0.12 0.22 rg
+    const draw_section_header = (stream_arr: string[], y_pos: number, num_str: string, title_str: string) => {
+      stream_arr.push(`q
+% Section Header Bar
+0.92 0.94 0.97 rg
+${margin_x} ${y_pos - 15} ${content_w} 15 re f
+0.08 0.16 0.28 rg
+${margin_x} ${y_pos - 15} 3.5 15 re f
+0.08 0.16 0.28 rg
 BT
-/F2 9 Tf
-${margin_x + 8} ${y1 - 10} Td
-(${escape(title_text)}) Tj
+/F2 8.5 Tf
+${margin_x + 8} ${y_pos - 11} Td
+(${escape(num_str)} ${escape(title_str)}) Tj
 ET
 Q
 `);
-      y1 -= 16;
+      return y_pos - 20.0;
     };
 
-    const draw_p1_row = (label: string, val: any, is_hl = false, height = 14.0) => {
-      p1.push(`q
-0.96 0.97 0.99 rg
-${margin_x} ${y1 - height} ${content_w} ${height} re f
-0.88 0.91 0.94 RG 0.5 w
-${margin_x} ${y1 - height} ${content_w} ${height} re S
-0.3 0.35 0.42 rg
+    const draw_clean_row = (stream_arr: string[], y_pos: number, label: string, value: any, is_highlight = false, row_idx = 0) => {
+      const bg = row_idx % 2 === 0 ? "1 1 1" : "0.97 0.98 0.99";
+      stream_arr.push(`q
+% Row Background
+${bg} rg
+${margin_x} ${y_pos - 13} ${content_w} 13 re f
+% Bottom subtle divider line
+0.88 0.91 0.94 RG 0.4 w
+${margin_x} ${y_pos - 13} m ${w - margin_x} ${y_pos - 13} l S
+
+% Label Column
+0.25 0.32 0.4 rg
 BT
 /F2 7.2 Tf
-${margin_x + 6} ${y1 - 10} Td
-(${escape(label)}:) Tj
+${margin_x + 6} ${y_pos - 9.5} Td
+(${escape(label)}) Tj
 ET
-${is_hl ? '0.8 0.1 0.1 rg' : '0.06 0.09 0.16 rg'}
+
+% Value Column
+${is_highlight ? "0.8 0.1 0.1 rg" : "0.08 0.12 0.18 rg"}
 BT
-/${is_hl ? 'F2' : 'F1'} 7.2 Tf
-${margin_x + 160} ${y1 - 10} Td
-(${escape(String(val).slice(0, 85))}) Tj
+/${is_highlight ? "F2" : "F1"} 7.2 Tf
+${margin_x + 160} ${y_pos - 9.5} Td
+(${escape(String(value).slice(0, 85))}) Tj
 ET
 Q
 `);
-      y1 -= (height + 1.5);
+      return y_pos - 13.5;
     };
 
-    // Part 1
-    draw_p1_section("PART 1: ORGANISATIONAL PARTICULARS & CISO NODAL CONTACT");
-    draw_p1_row("1.1 Reporting Organisation", "Apex Commercial Bank of India Ltd");
-    draw_p1_row("1.2 Sector / Regulatory Body", "Banking & Financial Services (RBI Supervised Scheduled Commercial Bank)");
-    draw_p1_row("1.3 CISO / Nodal Officer", "Rajeshwar Varma (Chief Information Security Officer)");
-    draw_p1_row("1.4 24x7 SOC Contact", "ciso-office@apexbank.in | soc-hotline@apexbank.in | +91-22-6889-0100");
-    draw_p1_row("1.5 Data Center & Cloud Region", "Primary DC: Navi Mumbai (Tier-IV) | DR: Hyderabad | Cloud: AWS ap-south-1");
-    y1 -= 6;
+    // PART 1: Organisation Particulars
+    y1 = draw_section_header(p1, y1, "1.0", "ORGANISATION PARTICULARS & CISO NODAL CONTACT");
+    y1 = draw_clean_row(p1, y1, "1.1 Name of Organisation", "Apex Commercial Bank of India Ltd", false, 0);
+    y1 = draw_clean_row(p1, y1, "1.2 Regulatory Category", "Banking & Financial Services (Scheduled Commercial Bank - RBI Supervised)", false, 1);
+    y1 = draw_clean_row(p1, y1, "1.3 CISO / Designated Nodal Officer", "Rajeshwar Varma (Chief Information Security Officer)", false, 2);
+    y1 = draw_clean_row(p1, y1, "1.4 24x7 SOC Emergency Contact", "ciso-office@apexbank.in | soc-hotline@apexbank.in | +91-22-6889-0100", false, 3);
+    y1 = draw_clean_row(p1, y1, "1.5 Primary Data Center Location", "Primary DC: Navi Mumbai Tier-IV | DR: Hyderabad | Cloud: AWS ap-south-1", false, 4);
+    y1 -= 6.0;
 
-    // Part 2
-    draw_p1_section("PART 2: INCIDENT IDENTIFICATION & REGULATORY CLASSIFICATION");
-    draw_p1_row("2.1 Incident Reference Tracking ID", inc_id, true);
-    draw_p1_row("2.2 Detection Timestamp (UTC & IST)", `${nowStr}  /  ${nowIst}`);
-    draw_p1_row("2.3 Statutory CERT-In Category", category, true);
-    draw_p1_row("2.4 Incident Severity & Threat Level", `${severity} (Immediate Escalation to Board Risk Committee)`);
-    draw_p1_row("2.5 MITRE ATT&CK Classification", `${threat_tactic} (${mitre_id})`);
-    draw_p1_row("2.6 Impacted Banking Channel", payment_channel);
-    y1 -= 6;
+    // PART 2: Incident Identification & Classification
+    y1 = draw_section_header(p1, y1, "2.0", "INCIDENT IDENTIFICATION & REGULATORY CLASSIFICATION");
+    y1 = draw_clean_row(p1, y1, "2.1 Incident Reference ID", inc_id, true, 0);
+    y1 = draw_clean_row(p1, y1, "2.2 Detection Timestamp (UTC / IST)", `${nowStr}  /  ${nowIst}`, false, 1);
+    y1 = draw_clean_row(p1, y1, "2.3 Mandatory CERT-In Category", category, true, 2);
+    y1 = draw_clean_row(p1, y1, "2.4 Severity & Escalation Level", `${severity} (Immediate Notification to Board Risk Committee)`, false, 3);
+    y1 = draw_clean_row(p1, y1, "2.5 MITRE ATT&CK Classification", `${threat_tactic} (${mitre_id})`, false, 4);
+    y1 = draw_clean_row(p1, y1, "2.6 Impacted Banking Infrastructure", payment_channel, false, 5);
+    y1 -= 6.0;
 
-    // Part 3
-    draw_p1_section("PART 3: TECHNICAL FORENSICS & INDICATORS OF COMPROMISE (IoCs)");
-    draw_p1_row("3.1 Primary Attacker Source IP(s)", attacker_ips[0] || "198.51.100.44", true);
+    // PART 3: Technical Forensics & Multi-IP IoCs
+    y1 = draw_section_header(p1, y1, "3.0", "TECHNICAL FORENSICS & MULTI-IP INDICATORS OF COMPROMISE (IoCs)");
+    y1 = draw_clean_row(p1, y1, "3.1 Primary Attacker / C2 IP", attacker_ips[0] || "198.51.100.44", true, 0);
     if (attacker_ips.length > 1) {
-      draw_p1_row("3.2 Proxy / Tor / Botnet Relays", attacker_ips.slice(1, 3).join(", "), true);
+      y1 = draw_clean_row(p1, y1, "3.2 Proxy / Tor Anonymizer Nodes", attacker_ips.slice(1, 3).join(", "), true, 1);
     }
     if (attacker_ips.length > 3) {
-      draw_p1_row("3.3 Additional Correlated IPs", attacker_ips.slice(3, 5).join(", "), true);
+      y1 = draw_clean_row(p1, y1, "3.3 Additional Botnet / Relay IPs", attacker_ips.slice(3, 5).join(", "), true, 2);
     }
-    draw_p1_row("3.4 Affected Internal Asset(s)", target_assets.slice(0, 2).join(", "));
-    draw_p1_row("3.5 Compromised Credential / Token", comp_creds);
-    draw_p1_row("3.6 Malicious Hash / Payload ID", payload_hash);
-    draw_p1_row("3.7 Autonomous Detection Tool", "VIGIL ES|QL Forensic Correlator (14.2ms Execution Latency)");
+    y1 = draw_clean_row(p1, y1, "3.4 Affected Internal Asset Endpoints", target_assets.slice(0, 2).join(", "), false, 3);
+    y1 = draw_clean_row(p1, y1, "3.5 Compromised Credential / Token", comp_creds, false, 4);
+    y1 = draw_clean_row(p1, y1, "3.6 Malicious Signature / Hash", payload_hash, false, 5);
+    y1 = draw_clean_row(p1, y1, "3.7 Autonomous Correlation Tool", "VIGIL ES|QL Forensic Correlator (14.2ms Execution Latency)", false, 6);
 
+    // Page 1 Footer
     p1.push(`q
-0.88 0.91 0.94 RG 0.5 w
-${margin_x} 28 m ${w - margin_x} 28 l S
-0.5 0.55 0.65 rg
+0.8 0.85 0.9 RG 0.5 w
+${margin_x} 32 m ${w - margin_x} 32 l S
+0.4 0.45 0.52 rg
 BT
-/F1 6.5 Tf
-${margin_x} 18 Td
-(VIGIL Autonomous AI SOC Analyst | Certified Statutory Filing for CERT-In & RBI CSIR | Page 1 of 2) Tj
-${w - margin_x - 90} 18 Td
-(Strictly Confidential) Tj
+/F1 6.8 Tf
+${margin_x} 20 Td
+(VIGIL Autonomous AI SOC Analyst | Statutory Filing under Section 70B IT Act 2000 | Form Annexure-1) Tj
+${w - margin_x - 65} 20 Td
+(Page 1 of 2) Tj
 ET
 Q
 `);
 
-    // ---------------- PAGE 2 ----------------
+    // =========================================================================
+    // PAGE 2 STREAM
+    // =========================================================================
     const p2: string[] = [];
-    let y2 = h - 30.0;
+    let y2 = h - 36.0;
 
-    const h_header2 = 45.0;
+    // Official Page 2 Header Band
     p2.push(`q
-0.04 0.08 0.16 rg
-${margin_x} ${y2 - h_header2} ${content_w} ${h_header2} re f
-0.01 0.52 0.78 RG 1.5 w
-${margin_x} ${y2 - h_header2} ${content_w} ${h_header2} re S
+0.08 0.16 0.28 rg
+${margin_x} ${y2 - 36} ${content_w} 36 re f
 
 1 1 1 rg
 BT
 /F2 10.5 Tf
-${margin_x + 12} ${y2 - 18} Td
+${margin_x + 14} ${y2 - 16} Td
 (INDIAN COMPUTER EMERGENCY RESPONSE TEAM (CERT-In) - ANNEXURE 1 CONTINUED) Tj
 ET
 
-0.22 0.74 0.97 rg
-BT
-/F2 8 Tf
-${margin_x + 12} ${y2 - 32} Td
-(INCIDENT REFERENCE: ${escape(inc_id)} | SECTOR: BANKING & FINANCIAL SERVICES) Tj
-ET
-Q
-`);
-    y2 -= (h_header2 + 14);
-
-    const draw_p2_section = (title_text: string) => {
-      p2.push(`q
-0.01 0.52 0.78 rg
-${margin_x} ${y2 - 12} 3 12 re f
-0.06 0.12 0.22 rg
-BT
-/F2 9 Tf
-${margin_x + 8} ${y2 - 10} Td
-(${escape(title_text)}) Tj
-ET
-Q
-`);
-      y2 -= 16;
-    };
-
-    const draw_p2_row = (label: string, val: any, is_hl = false, height = 14.0) => {
-      p2.push(`q
-0.96 0.97 0.99 rg
-${margin_x} ${y2 - height} ${content_w} ${height} re f
-0.88 0.91 0.94 RG 0.5 w
-${margin_x} ${y2 - height} ${content_w} ${height} re S
-0.3 0.35 0.42 rg
-BT
-/F2 7.2 Tf
-${margin_x + 6} ${y2 - 10} Td
-(${escape(label)}:) Tj
-ET
-${is_hl ? '0.8 0.1 0.1 rg' : '0.06 0.09 0.16 rg'}
-BT
-/${is_hl ? 'F2' : 'F1'} 7.2 Tf
-${margin_x + 160} ${y2 - 10} Td
-(${escape(String(val).slice(0, 85))}) Tj
-ET
-Q
-`);
-      y2 -= (height + 1.5);
-    };
-
-    // Part 4
-    draw_p2_section("PART 4: RUPEE FINANCIAL EXPOSURE & IMPACT ASSESSMENT");
-    draw_p2_row("4.1 Direct Rupee Funds at Risk (INR)", `Rs. ${direct_inr.toLocaleString("en-IN")}.00`, direct_inr > 0);
-    draw_p2_row("4.2 Customer Blast Radius Breakdown", `${affected_accounts} Total Accounts (${corp_accounts} Corporate, ${hni_accounts} HNI / Retail)`);
-    draw_p2_row("4.3 Customer PII / Statement Leakage", direct_inr > 0 ? "NO PII EXFILTRATED (Intercepted before batch clearing)" : "Zero Customer PII Exposure");
-    draw_p2_row("4.4 Core Banking & Switch Integrity", "OPERATIONAL (Rogue transactions quarantined in flight)");
-    draw_p2_row("4.5 Business Continuity Status", "Green / Normal (No service disruption to retail banking customers)");
-    y2 -= 8;
-
-    // Part 5
-    draw_p2_section("PART 5: REMEDIAL, CONTAINMENT & ISOLATION ACTIONS EXECUTED");
-    if (actions.length > 0) {
-      actions.slice(0, 4).forEach((act, idx) => {
-        draw_p2_row(`5.${idx + 1} ${act.title}`, `${act.description} [EXECUTED]`, true);
-      });
-    } else {
-      draw_p2_row("5.1 Perimeter Firewall Action", "Null-routed malicious ingress IPs on edge firewall & Cloud WAF [EXECUTED]", true);
-      draw_p2_row("5.2 IAM Session Revocation", "OAuth2 Bearer token revoked & forced password rotation [EXECUTED]", true);
-    }
-    draw_p2_row("5.5 Digital Evidence Preservation", "SEALED in SHA-256 Immutable Audit Ledger & AWS S3 Object Lock (WORM)");
-    draw_p2_row("5.6 Continuous Telemetry Monitoring", "Elastic Cloud live agent polling active (1-minute heartbeat)");
-    y2 -= 8;
-
-    // Part 6
-    draw_p2_section("PART 6: STATUTORY DECLARATION & FORMAL NODAL SIGN-OFF");
-    const dec_box = 85.0;
-    p2.push(`q
-0.97 0.98 1 rg
-${margin_x} ${y2 - dec_box} ${content_w} ${dec_box} re f
-0.82 0.88 0.95 RG 1 w
-${margin_x} ${y2 - dec_box} ${content_w} ${dec_box} re S
-
-0.2 0.25 0.35 rg
-BT
-/F1 6.8 Tf
-${margin_x + 8} ${y2 - 12} Td
-(STATUTORY DECLARATION UNDER SECTION 70B OF IT ACT, 2000 & CERT-In DIRECTIONS 2022:) Tj
-/F1 6.3 Tf
-${margin_x + 8} ${y2 - 24} Td
-(I hereby confirm that this incident notification has been compiled and validated by the VIGIL Autonomous Cyber AI) Tj
-${margin_x + 8} ${y2 - 34} Td
-(Engine in coordination with the CISO Nodal Office. All indicators of compromise, affected IP vectors, financial exposure) Tj
-${margin_x + 8} ${y2 - 44} Td
-(assessments, and remedial containment actions are true and accurate as recorded in the immutable cryptographic ledger.) Tj
-ET
-
-0.05 0.15 0.3 rg
-BT
-/F2 7.2 Tf
-${margin_x + 8} ${y2 - 62} Td
-(Digitally Authorized by:) Tj
-/F2 8 Tf
-${margin_x + 100} ${y2 - 62} Td
-(Rajeshwar Varma | Chief Information Security Officer) Tj
-/F1 6.5 Tf
-${margin_x + 100} ${y2 - 73} Td
-(Apex Commercial Bank of India Ltd | Certified Public Key: 0x8F92..BC10) Tj
-ET
-
-0.8 0.1 0.1 rg
-${w - margin_x - 110} ${y2 - 78} 100 28 re f
-1 1 1 rg
+0.35 0.75 1 rg
 BT
 /F2 7.5 Tf
-${w - margin_x - 105} ${y2 - 60} Td
-(DIGITALLY SEALED) Tj
+${margin_x + 14} ${y2 - 28} Td
+(INCIDENT REFERENCE: ${escape(inc_id)} | SECTOR: BANKING & FINANCIAL SERVICES \\(BFSI\\)) Tj
+ET
+Q
+`);
+    y2 -= 50.0;
+
+    // PART 4: Rupee Financial Exposure & Impact Assessment
+    y2 = draw_section_header(p2, y2, "4.0", "RUPEE FINANCIAL EXPOSURE & IMPACT ASSESSMENT");
+    y2 = draw_clean_row(p2, y2, "4.1 Direct Rupee Funds at Risk (INR)", `Rs. ${direct_inr.toLocaleString("en-IN")}.00`, (direct_inr > 0), 0);
+    y2 = draw_clean_row(p2, y2, "4.2 Customer Blast Radius Breakdown", `${affected_accounts} Total Accounts (${corp_accounts} Corporate, ${hni_accounts} HNI / Private Wealth)`, false, 1);
+    y2 = draw_clean_row(p2, y2, "4.3 Customer PII / Statement Leakage", (direct_inr > 0 ? "NO PII EXFILTRATED (Intercepted before clearance)" : "Zero Customer PII Impact"), false, 2);
+    y2 = draw_clean_row(p2, y2, "4.4 Payment Switch & Ledger Status", "OPERATIONAL (Unauthorized batch quarantined in-flight)", false, 3);
+    y2 = draw_clean_row(p2, y2, "4.5 Business Continuity Status", "Green / Normal (No disruption to retail banking customers)", false, 4);
+    y2 -= 6.0;
+
+    // PART 5: Remedial, Mitigation & Containment Actions Executed
+    y2 = draw_section_header(p2, y2, "5.0", "REMEDIAL, MITIGATION & CONTAINMENT ACTIONS EXECUTED");
+    if (actions.length > 0) {
+      actions.slice(0, 4).forEach((act, idx) => {
+        y2 = draw_clean_row(p2, y2, `5.${idx + 1} ${act.title}`, `${act.description} [EXECUTED]`, true, idx);
+      });
+    } else {
+      y2 = draw_clean_row(p2, y2, "5.1 Perimeter Firewall Action", "Null-routed malicious ingress IPs on edge firewall & Cloud WAF [EXECUTED]", true, 0);
+      y2 = draw_clean_row(p2, y2, "5.2 IAM Session Revocation", "OAuth2 Bearer token revoked & forced password rotation [EXECUTED]", true, 1);
+    }
+    y2 = draw_clean_row(p2, y2, "5.5 Digital Evidence Preservation", "SEALED in SHA-256 Immutable Audit Ledger & AWS S3 WORM Storage", false, 4);
+    y2 = draw_clean_row(p2, y2, "5.6 Real-Time Telemetry Stream", "Elastic Cloud live monitoring active (1-minute heartbeat telemetry)", false, 5);
+    y2 -= 8.0;
+
+    // PART 6: Statutory Declaration & Nodal Officer Digital Authorization
+    y2 = draw_section_header(p2, y2, "6.0", "STATUTORY DECLARATION & FORMAL NODAL SIGN-OFF");
+    
+    const dec_h = 100.0;
+    p2.push(`q
+% Formal Certificate Border
+0.96 0.97 0.99 rg
+${margin_x} ${y2 - dec_h} ${content_w} ${dec_h} re f
+0.82 0.86 0.9 RG 0.8 w
+${margin_x} ${y2 - dec_h} ${content_w} ${dec_h} re S
+
+% Left Accent Ribbon
+0.08 0.16 0.28 rg
+${margin_x} ${y2 - dec_h} 3.5 ${dec_h} re f
+
+% Declaration Legal Text
+0.2 0.26 0.35 rg
+BT
+/F2 7 Tf
+${margin_x + 12} ${y2 - 14} Td
+(STATUTORY DECLARATION UNDER SECTION 70B OF IT ACT, 2000 & CERT-In DIRECTIONS 2022:) Tj
+/F1 6.5 Tf
+${margin_x + 12} ${y2 - 26} Td
+(I hereby confirm that this cyber security incident notification has been generated and validated by the VIGIL) Tj
+${margin_x + 12} ${y2 - 36} Td
+(Autonomous Incident Response Engine in coordination with the CISO Nodal Office. All indicators of compromise,) Tj
+${margin_x + 12} ${y2 - 46} Td
+(affected asset vectors, rupee exposure figures, and containment actions are authentic and cryptographically sealed.) Tj
+ET
+
+% Digital Signature & Authorization
+0.08 0.16 0.28 rg
+BT
+/F2 7.5 Tf
+${margin_x + 12} ${y2 - 66} Td
+(Digitally Authorized & Submitted by:) Tj
+/F2 8.5 Tf
+${margin_x + 12} ${y2 - 79} Td
+(Rajeshwar Varma | Chief Information Security Officer) Tj
+/F1 6.8 Tf
+${margin_x + 12} ${y2 - 90} Td
+(Apex Commercial Bank of India Ltd | Certified Public Key: 0x8F92..BC10 | Mumbai HQ) Tj
+ET
+
+% Official Seal Badge
+0.8 0.12 0.12 rg
+${w - margin_x - 120} ${y2 - 90} 108 34 re f
+1 1 1 rg
+BT
+/F2 8 Tf
+${w - margin_x - 112} {y2 - 68} Td
+(OFFICIALLY SEALED) Tj
 /F1 6 Tf
-${w - margin_x - 105} ${y2 - 72} Td
+${w - margin_x - 112} {y2 - 78} Td
 (SHA-256 HASH VERIFIED) Tj
+/F1 5.8 Tf
+${w - margin_x - 112} {y2 - 86} Td
+(S3 WORM OBJECT LOCK) Tj
 ET
 Q
 `);
 
+    // Page 2 Footer
     p2.push(`q
-0.88 0.91 0.94 RG 0.5 w
-${margin_x} 28 m ${w - margin_x} 28 l S
-0.5 0.55 0.65 rg
+0.8 0.85 0.9 RG 0.5 w
+${margin_x} 32 m {w - margin_x} 32 l S
+0.4 0.45 0.52 rg
 BT
-/F1 6.5 Tf
-${margin_x} 18 Td
-(VIGIL Autonomous AI SOC Analyst | Certified Statutory Filing for CERT-In & RBI CSIR | Page 2 of 2) Tj
-${w - margin_x - 90} 18 Td
-(Strictly Confidential) Tj
+/F1 6.8 Tf
+${margin_x} 20 Td
+(VIGIL Autonomous AI SOC Analyst | Statutory Filing under Section 70B IT Act 2000 | Form Annexure-1) Tj
+${w - margin_x - 65} 20 Td
+(Page 2 of 2) Tj
 ET
 Q
 `);
@@ -2737,93 +2721,218 @@ Q
                 </div>
               )}
 
-              {/* TAB 8: CERT-In FORM (COMPREHENSIVE OFFICIAL ANNEXURE 1 VIEW) */}
+              {/* TAB 8: CERT-In FORM (EXECUTIVE OFFICIAL ANNEXURE 1 VIEW) */}
               {activeTab === "certin" && (
-                <div className={`border rounded-2xl p-5 flex flex-col gap-4 text-left transition-colors ${
-                  isDark ? "bg-[#0F172A] border-slate-800" : "bg-white border-slate-200 shadow-sm"
+                <div className={`border rounded-2xl overflow-hidden text-left transition-colors shadow-xl ${
+                  isDark ? "bg-[#0F172A] border-slate-800" : "bg-white border-slate-200"
                 }`}>
-                  <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
-                    <div>
-                      <div className="flex items-center gap-2 text-sm font-bold text-sky-500">
-                        <FileText className="h-4 w-4" />
-                        Official CERT-In Annexure-1 Statutory Incident Reporting Form
-                      </div>
-                      <p className={`text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-                        Mandatory Statutory Reporting under Section 70B of IT Act 2000 & CERT-In Directions 2022
-                      </p>
+                  {/* Action Bar */}
+                  <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-sky-500" />
+                      <span className="font-bold text-sm">Official CERT-In Annexure-1 Regulatory Document</span>
+                      <span className="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded font-mono font-bold">
+                        Section 70B IT Act Compliant
+                      </span>
                     </div>
                     <button
                       onClick={handleDownloadPdf}
-                      className="bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow transition-all cursor-pointer"
+                      className="bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-2 shadow-lg shadow-sky-600/20 transition-all cursor-pointer"
                     >
-                      <Download className="h-3.5 w-3.5" />
-                      <span>Download 2-Page PDF</span>
+                      <Download className="h-4 w-4" />
+                      <span>Download Official PDF (2 Pages)</span>
                     </button>
                   </div>
 
-                  <div className={`p-5 rounded-xl border font-mono text-xs space-y-4 ${
-                    isDark ? "bg-slate-950 border-slate-800 text-slate-300" : "bg-slate-50 border-slate-200 text-slate-800"
+                  {/* Document Container */}
+                  <div className={`p-6 max-w-4xl mx-auto my-4 rounded-xl border font-sans text-xs space-y-6 shadow-sm ${
+                    isDark ? "bg-[#0B1120] border-slate-800 text-slate-200" : "bg-white border-slate-200 text-slate-800"
                   }`}>
-                    <div className="border-b border-slate-800 pb-2">
-                      <div className="font-bold text-sky-400 text-sm">INDIAN COMPUTER EMERGENCY RESPONSE TEAM (CERT-In)</div>
-                      <div className="text-slate-400 text-xs">CYBER SECURITY INCIDENT REPORTING FORM - ANNEXURE 1</div>
-                      <div className="text-[10px] text-amber-500 mt-0.5">Mandatory statutory filing within 6 hours of incident detection</div>
-                    </div>
-
-                    {/* Part 1 */}
-                    <div className="space-y-1">
-                      <div className="font-bold text-sky-400">PART 1: ORGANISATIONAL PARTICULARS & CISO NODAL CONTACT</div>
-                      <div>• Name of Organisation: Apex Commercial Bank of India Ltd</div>
-                      <div>• Sector / Regulatory Body: Banking & Financial Services (RBI Supervised)</div>
-                      <div>• CISO / Nodal Officer: Rajeshwar Varma | ciso-office@apexbank.in | +91-22-6889-0100</div>
-                      <div>• Primary DC Location: Navi Mumbai Tier-IV | Cloud: AWS ap-south-1</div>
-                    </div>
-
-                    {/* Part 2 */}
-                    <div className="space-y-1 pt-2 border-t border-slate-800">
-                      <div className="font-bold text-sky-400">PART 2: INCIDENT IDENTIFICATION & CLASSIFICATION</div>
-                      <div>• Incident Reference ID: <span className="text-amber-400 font-bold">{currentScenario.incident_id}</span></div>
-                      <div>• Detection Timestamp: {new Date().toUTCString()} (Filed in 4.2 mins)</div>
-                      <div>• CERT-In Incident Category: <span className="text-red-400 font-bold">{currentScenario.step1.certin_category}</span></div>
-                      <div>• MITRE ATT&CK Mapping: {currentScenario.threat_tactic} ({currentScenario.mitre_id})</div>
-                    </div>
-
-                    {/* Part 3 */}
-                    <div className="space-y-1 pt-2 border-t border-slate-800">
-                      <div className="font-bold text-sky-400">PART 3: TECHNICAL FORENSICS & INDICATORS OF COMPROMISE (IoCs)</div>
-                      <div>• Primary Attacker Source IP: <span className="text-red-400 font-bold">{currentScenario.attacker_ip}</span></div>
-                      <div>• Attacker / Botnet Relays: {currentScenario.attacker_ips ? currentScenario.attacker_ips.join(", ") : currentScenario.attacker_ip}</div>
-                      <div>• Target Assets & Gateways: {currentScenario.target_assets ? currentScenario.target_assets.join(", ") : currentScenario.affected_systems.join(", ")}</div>
-                      <div>• Compromised Key / Role: {currentScenario.compromised_credentials || currentScenario.compromised_user}</div>
-                      <div>• Cryptographic Hash ID: {currentScenario.payload_hash || "SHA256: 4f98d9e2b4510aa18992cde8710b14ea987b213f"}</div>
-                    </div>
-
-                    {/* Part 4 */}
-                    <div className="space-y-1 pt-2 border-t border-slate-800">
-                      <div className="font-bold text-sky-400">PART 4: RUPEE FINANCIAL EXPOSURE & BLAST RADIUS</div>
-                      <div>• Direct Financial Risk: <span className="text-emerald-400 font-bold">₹ {currentScenario.direct_exposure_inr.toLocaleString("en-IN")}.00</span></div>
-                      <div>• Impacted Banking Channel: {currentScenario.payment_channel || currentScenario.step3.account_examples}</div>
-                      <div>• Accounts in Blast Radius: {currentScenario.step3.affected_accounts_total} Accounts ({currentScenario.step3.corporate_count} Corporate, {currentScenario.step3.hni_count} HNI)</div>
-                      <div>• Core Banking System Integrity: NORMAL (Contained in-flight; 0 unauthorized debits)</div>
-                    </div>
-
-                    {/* Part 5 */}
-                    <div className="space-y-1 pt-2 border-t border-slate-800">
-                      <div className="font-bold text-sky-400">PART 5: REMEDIAL, CONTAINMENT & ISOLATION ACTIONS EXECUTED</div>
-                      {currentScenario.step4.actions.map((act, i) => (
-                        <div key={i}>• 5.{i+1} {act.title}: {act.description} <span className="text-emerald-400">[EXECUTED]</span></div>
-                      ))}
-                      <div>• 5.5 Digital Evidence Locker: Sealed in SHA-256 Ledger & S3 Object Lock (WORM)</div>
-                    </div>
-
-                    {/* Part 6 */}
-                    <div className="space-y-1 pt-2 border-t border-slate-800">
-                      <div className="font-bold text-sky-400">PART 6: STATUTORY DECLARATION & FORMAL NODAL SIGN-OFF</div>
-                      <div className="text-[11px] text-slate-400">
-                        "Submitted in strict compliance with Section 70B of IT Act 2000 & CERT-In Directions 2022. Certified and cryptographically signed by VIGIL AI SOC & CISO Nodal Office."
+                    {/* Official Document Header Banner */}
+                    <div className="p-5 rounded-xl bg-gradient-to-r from-slate-900 via-[#0F1E36] to-slate-900 border border-slate-800 text-white flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div>
+                        <div className="text-[10px] tracking-widest text-slate-400 font-bold uppercase">
+                          GOVERNMENT OF INDIA | MINISTRY OF ELECTRONICS & INFORMATION TECHNOLOGY
+                        </div>
+                        <div className="text-base font-black tracking-tight text-sky-400 mt-1">
+                          INDIAN COMPUTER EMERGENCY RESPONSE TEAM (CERT-In)
+                        </div>
+                        <div className="text-xs font-bold text-slate-200 mt-0.5">
+                          CYBER SECURITY INCIDENT REPORTING FORM — ANNEXURE 1
+                        </div>
+                        <div className="text-[10px] text-slate-400 mt-1">
+                          Mandatory Statutory Reporting under Section 70B of IT Act 2000 & CERT-In Directions 2022
+                        </div>
                       </div>
-                      <div className="text-xs font-bold text-slate-200 mt-1">
-                        Digitally Authorized: Rajeshwar Varma | Chief Information Security Officer (Apex Bank)
+
+                      <div className="bg-red-500/20 border border-red-500/40 p-3 rounded-xl text-right flex-shrink-0">
+                        <div className="text-[10px] font-bold text-red-400 uppercase tracking-wider">6-Hour Statutory SLA</div>
+                        <div className="text-xs font-bold text-emerald-400 mt-0.5">Status: FILED IN TIME</div>
+                        <div className="text-[10px] font-mono text-slate-300">Elapsed: 4.2 Minutes</div>
+                      </div>
+                    </div>
+
+                    {/* Section 1.0 */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 font-bold text-xs bg-slate-100 dark:bg-slate-900/80 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 text-sky-500">
+                        <span>1.0</span>
+                        <span>ORGANISATION PARTICULARS & CISO NODAL CONTACT</span>
+                      </div>
+                      <div className="divide-y divide-slate-200 dark:divide-slate-800 border rounded-lg overflow-hidden text-xs">
+                        <div className="grid grid-cols-3 p-2.5 bg-slate-50/50 dark:bg-slate-950/40">
+                          <span className="font-semibold text-slate-500">1.1 Name of Organisation</span>
+                          <span className="col-span-2 font-bold text-slate-900 dark:text-slate-100">Apex Commercial Bank of India Ltd</span>
+                        </div>
+                        <div className="grid grid-cols-3 p-2.5 bg-white dark:bg-[#0F172A]">
+                          <span className="font-semibold text-slate-500">1.2 Regulatory Category</span>
+                          <span className="col-span-2 text-slate-800 dark:text-slate-200">Banking & Financial Services (Scheduled Commercial Bank - RBI Supervised)</span>
+                        </div>
+                        <div className="grid grid-cols-3 p-2.5 bg-slate-50/50 dark:bg-slate-950/40">
+                          <span className="font-semibold text-slate-500">1.3 CISO / Nodal Officer</span>
+                          <span className="col-span-2 text-slate-800 dark:text-slate-200">Rajeshwar Varma (Chief Information Security Officer)</span>
+                        </div>
+                        <div className="grid grid-cols-3 p-2.5 bg-white dark:bg-[#0F172A]">
+                          <span className="font-semibold text-slate-500">1.4 24x7 SOC Emergency Hotline</span>
+                          <span className="col-span-2 font-mono text-slate-800 dark:text-slate-200">ciso-office@apexbank.in | soc-hotline@apexbank.in | +91-22-6889-0100</span>
+                        </div>
+                        <div className="grid grid-cols-3 p-2.5 bg-slate-50/50 dark:bg-slate-950/40">
+                          <span className="font-semibold text-slate-500">1.5 Data Center & Cloud Infrastructure</span>
+                          <span className="col-span-2 text-slate-800 dark:text-slate-200">Primary DC: Navi Mumbai Tier-IV | DR: Hyderabad | Cloud: AWS ap-south-1</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Section 2.0 */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 font-bold text-xs bg-slate-100 dark:bg-slate-900/80 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 text-sky-500">
+                        <span>2.0</span>
+                        <span>INCIDENT IDENTIFICATION & REGULATORY CLASSIFICATION</span>
+                      </div>
+                      <div className="divide-y divide-slate-200 dark:divide-slate-800 border rounded-lg overflow-hidden text-xs">
+                        <div className="grid grid-cols-3 p-2.5 bg-slate-50/50 dark:bg-slate-950/40">
+                          <span className="font-semibold text-slate-500">2.1 Incident Reference ID</span>
+                          <span className="col-span-2 font-mono font-bold text-amber-500">{currentScenario.incident_id}</span>
+                        </div>
+                        <div className="grid grid-cols-3 p-2.5 bg-white dark:bg-[#0F172A]">
+                          <span className="font-semibold text-slate-500">2.2 Detection Timestamp</span>
+                          <span className="col-span-2 font-mono text-slate-800 dark:text-slate-200">{new Date().toUTCString()}</span>
+                        </div>
+                        <div className="grid grid-cols-3 p-2.5 bg-slate-50/50 dark:bg-slate-950/40">
+                          <span className="font-semibold text-slate-500">2.3 CERT-In Category</span>
+                          <span className="col-span-2 font-semibold text-red-500">{currentScenario.step1.certin_category}</span>
+                        </div>
+                        <div className="grid grid-cols-3 p-2.5 bg-white dark:bg-[#0F172A]">
+                          <span className="font-semibold text-slate-500">2.4 Severity Assessment</span>
+                          <span className="col-span-2 font-bold text-red-400">{currentScenario.severity} (Immediate Board Escalation)</span>
+                        </div>
+                        <div className="grid grid-cols-3 p-2.5 bg-slate-50/50 dark:bg-slate-950/40">
+                          <span className="font-semibold text-slate-500">2.5 MITRE ATT&CK Mapping</span>
+                          <span className="col-span-2 font-mono text-sky-400">{currentScenario.threat_tactic} ({currentScenario.mitre_id})</span>
+                        </div>
+                        <div className="grid grid-cols-3 p-2.5 bg-white dark:bg-[#0F172A]">
+                          <span className="font-semibold text-slate-500">2.6 Impacted Banking Channel</span>
+                          <span className="col-span-2 font-semibold text-slate-800 dark:text-slate-200">{currentScenario.payment_channel || currentScenario.step3.account_examples}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Section 3.0 */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 font-bold text-xs bg-slate-100 dark:bg-slate-900/80 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 text-sky-500">
+                        <span>3.0</span>
+                        <span>TECHNICAL FORENSICS & MULTI-IP INDICATORS OF COMPROMISE (IoCs)</span>
+                      </div>
+                      <div className="divide-y divide-slate-200 dark:divide-slate-800 border rounded-lg overflow-hidden text-xs font-mono">
+                        <div className="grid grid-cols-3 p-2.5 bg-slate-50/50 dark:bg-slate-950/40">
+                          <span className="font-sans font-semibold text-slate-500">3.1 Primary Attacker / C2 IP</span>
+                          <span className="col-span-2 font-bold text-red-500">{currentScenario.attacker_ip} (Primary C2 Ingress)</span>
+                        </div>
+                        {currentScenario.attacker_ips && currentScenario.attacker_ips.length > 1 && (
+                          <div className="grid grid-cols-3 p-2.5 bg-white dark:bg-[#0F172A]">
+                            <span className="font-sans font-semibold text-slate-500">3.2 Botnet / Proxy / Tor Relays</span>
+                            <span className="col-span-2 text-amber-400">{currentScenario.attacker_ips.slice(1).join(", ")}</span>
+                          </div>
+                        )}
+                        <div className="grid grid-cols-3 p-2.5 bg-slate-50/50 dark:bg-slate-950/40">
+                          <span className="font-sans font-semibold text-slate-500">3.3 Target Assets & Endpoints</span>
+                          <span className="col-span-2 text-sky-400">{currentScenario.target_assets ? currentScenario.target_assets.join(", ") : currentScenario.affected_systems.join(", ")}</span>
+                        </div>
+                        <div className="grid grid-cols-3 p-2.5 bg-white dark:bg-[#0F172A]">
+                          <span className="font-sans font-semibold text-slate-500">3.4 Compromised Credential / Key</span>
+                          <span className="col-span-2 text-slate-300">{currentScenario.compromised_credentials || currentScenario.compromised_user}</span>
+                        </div>
+                        <div className="grid grid-cols-3 p-2.5 bg-slate-50/50 dark:bg-slate-950/40">
+                          <span className="font-sans font-semibold text-slate-500">3.5 Malicious Hash / Payload ID</span>
+                          <span className="col-span-2 text-slate-400 break-all">{currentScenario.payload_hash || "SHA256: 4f98d9e2b4510aa18992cde8710b14ea987b213f"}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Section 4.0 */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 font-bold text-xs bg-slate-100 dark:bg-slate-900/80 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 text-sky-500">
+                        <span>4.0</span>
+                        <span>RUPEE FINANCIAL EXPOSURE & IMPACT ASSESSMENT</span>
+                      </div>
+                      <div className="divide-y divide-slate-200 dark:divide-slate-800 border rounded-lg overflow-hidden text-xs">
+                        <div className="grid grid-cols-3 p-2.5 bg-slate-50/50 dark:bg-slate-950/40">
+                          <span className="font-semibold text-slate-500">4.1 Direct Financial Risk (INR)</span>
+                          <span className="col-span-2 font-mono font-black text-emerald-500 text-sm">
+                            ₹ {currentScenario.direct_exposure_inr.toLocaleString("en-IN")}.00
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-3 p-2.5 bg-white dark:bg-[#0F172A]">
+                          <span className="font-semibold text-slate-500">4.2 Customer Blast Radius</span>
+                          <span className="col-span-2 font-semibold text-slate-800 dark:text-slate-200">
+                            {currentScenario.step3.affected_accounts_total} Accounts ({currentScenario.step3.corporate_count} Corporate, {currentScenario.step3.hni_count} HNI)
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-3 p-2.5 bg-slate-50/50 dark:bg-slate-950/40">
+                          <span className="font-semibold text-slate-500">4.3 Core Banking Integrity</span>
+                          <span className="col-span-2 text-emerald-400 font-semibold">NORMAL (Unauthorized transactions intercepted & isolated in flight)</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Section 5.0 */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 font-bold text-xs bg-slate-100 dark:bg-slate-900/80 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 text-sky-500">
+                        <span>5.0</span>
+                        <span>REMEDIAL, MITIGATION & CONTAINMENT ACTIONS EXECUTED</span>
+                      </div>
+                      <div className="space-y-1.5 text-xs">
+                        {currentScenario.step4.actions.map((act, i) => (
+                          <div key={i} className="flex items-center justify-between p-2.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-950/50">
+                            <div>
+                              <span className="font-bold text-sky-400">5.{i+1} {act.title}:</span>{" "}
+                              <span className="text-slate-400">{act.description}</span>
+                            </div>
+                            <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                              EXECUTED
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Section 6.0: Certificate Seal */}
+                    <div className="p-4 rounded-xl border border-sky-500/30 bg-gradient-to-br from-slate-950 via-[#0A1428] to-slate-950 text-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div className="space-y-1">
+                        <div className="font-bold text-sky-400 text-xs">
+                          6.0 STATUTORY DECLARATION & FORMAL NODAL SIGN-OFF
+                        </div>
+                        <p className="text-[11px] text-slate-400 max-w-xl">
+                          "Submitted in compliance with Section 70B of Information Technology Act 2000 & CERT-In Directions 2022. All telemetry, multiple threat vectors, and containment records are verified and cryptographically sealed."
+                        </p>
+                        <div className="text-xs font-bold text-slate-200 pt-1">
+                          Digitally Authorized by: Rajeshwar Varma | Chief Information Security Officer (Apex Bank)
+                        </div>
+                      </div>
+
+                      <div className="bg-red-500/20 border border-red-500/40 p-3 rounded-xl text-center flex-shrink-0">
+                        <div className="text-[10px] font-bold text-red-400">OFFICIALLY SEALED</div>
+                        <div className="text-[9px] font-mono text-slate-300">SHA-256 HASH VERIFIED</div>
+                        <div className="text-[9px] font-mono text-emerald-400 font-bold mt-0.5">S3 WORM OBJECT LOCK</div>
                       </div>
                     </div>
                   </div>

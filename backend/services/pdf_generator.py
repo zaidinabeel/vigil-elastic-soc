@@ -1,7 +1,7 @@
 """
 Official CERT-In Incident Report PDF Generator for VIGIL.
-Generates a 2-page, strictly compliant statutory Annexure-1 PDF document
-under Section 70B of IT Act 2000 and CERT-In Directions 2022.
+Generates an executive, elegant, official government-standard CERT-In Annexure-1
+2-page PDF document under Section 70B of IT Act 2000 & CERT-In Directions 2022.
 """
 import io
 import os
@@ -13,7 +13,7 @@ class CertInPDFBuilder:
         self.data = incident_data
         self.w = 595.28 # A4 width in points
         self.h = 841.89 # A4 height in points
-        self.margin_x = 36.0
+        self.margin_x = 40.0
         self.content_w = self.w - 2 * self.margin_x
 
     def _escape(self, text):
@@ -73,295 +73,271 @@ class CertInPDFBuilder:
         now_utc = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
         now_ist = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S IST")
 
-        # -------------------------------------------------------------
+        # =========================================================================
         # PAGE 1 STREAM
-        # -------------------------------------------------------------
+        # =========================================================================
         p1 = []
-        y1 = self.h - 30.0
+        y1 = self.h - 36.0
 
-        h_header = 70.0
+        # Official Top Banner (Clean & Authoritative Government Header)
         p1.append(f"""q
-0.04 0.08 0.16 rg
-{self.margin_x} {y1 - h_header} {self.content_w} {h_header} re f
-0.01 0.52 0.78 RG 1.5 w
-{self.margin_x} {y1 - h_header} {self.content_w} {h_header} re S
+% Top Decorative Header Band
+0.08 0.16 0.28 rg
+{self.margin_x} {y1 - 62} {self.content_w} 62 re f
 
 1 1 1 rg
 BT
-/F2 12 Tf
-{self.margin_x + 12} {y1 - 20} Td
+/F2 11 Tf
+{self.margin_x + 16} {y1 - 18} Td
 (GOVERNMENT OF INDIA | MINISTRY OF ELECTRONICS & INFORMATION TECHNOLOGY) Tj
 ET
 
-0.22 0.74 0.97 rg
+0.35 0.75 1 rg
 BT
-/F2 13 Tf
-{self.margin_x + 12} {y1 - 38} Td
+/F2 13.5 Tf
+{self.margin_x + 16} {y1 - 35} Td
 (INDIAN COMPUTER EMERGENCY RESPONSE TEAM (CERT-In)) Tj
 ET
 
-1 1 1 rg
+0.85 0.9 0.98 rg
 BT
-/F2 9.5 Tf
-{self.margin_x + 12} {y1 - 52} Td
+/F2 8.5 Tf
+{self.margin_x + 16} {y1 - 48} Td
 (CYBER SECURITY INCIDENT REPORTING FORM - ANNEXURE 1) Tj
+/F1 6.5 Tf
+{self.margin_x + 16} {y1 - 57} Td
+(Under Section 70B of Information Technology Act, 2000 & CERT-In Directions 2022) Tj
 ET
 
-0.6 0.7 0.82 rg
-BT
-/F1 7.2 Tf
-{self.margin_x + 12} {y1 - 64} Td
-(Mandatory statutory reporting under Section 70B of IT Act 2000 & CERT-In Directions F.No. 20\(3\)/2022-CERT-In) Tj
-ET
-
-0.85 0.15 0.15 rg
-{self.w - self.margin_x - 110} {y1 - 62} 98 42 re f
+% 6-Hour SLA Badge
+0.8 0.12 0.12 rg
+{self.w - self.margin_x - 120} {y1 - 52} 104 38 re f
 1 1 1 rg
 BT
-/F2 8 Tf
-{self.w - self.margin_x - 105} {y1 - 32} Td
+/F2 7.5 Tf
+{self.w - self.margin_x - 114} {y1 - 25} Td
 (6-HOUR STATUTORY SLA) Tj
 /F1 6.5 Tf
-{self.w - self.margin_x - 105} {y1 - 45} Td
-(STATUS: FILED IN TIME) Tj
-/F2 7 Tf
-{self.w - self.margin_x - 105} {y1 - 56} Td
-(LATENCY: 4.2 MINS) Tj
+{self.w - self.margin_x - 114} {y1 - 36} Td
+(Status: FILED IN TIME) Tj
+/F2 6.5 Tf
+{self.w - self.margin_x - 114} {y1 - 46} Td
+(Elapsed: 4.2 Minutes) Tj
 ET
 Q
 """)
-        y1 -= (h_header + 12)
+        y1 -= 76.0
 
-        def draw_p1_section(title_text):
-            nonlocal y1
-            p1.append(f"""q
-0.01 0.52 0.78 rg
-{self.margin_x} {y1 - 12} 3 12 re f
-0.06 0.12 0.22 rg
+        def draw_section_header(stream_arr, y_pos, num_str, title_str):
+            stream_arr.append(f"""q
+% Section Header Bar
+0.92 0.94 0.97 rg
+{self.margin_x} {y_pos - 15} {self.content_w} 15 re f
+0.08 0.16 0.28 rg
+{self.margin_x} {y_pos - 15} 3.5 15 re f
+0.08 0.16 0.28 rg
 BT
-/F2 9 Tf
-{self.margin_x + 8} {y1 - 10} Td
-({self._escape(title_text)}) Tj
+/F2 8.5 Tf
+{self.margin_x + 8} {y_pos - 11} Td
+({self._escape(num_str)} {self._escape(title_str)}) Tj
 ET
 Q
 """)
-            y1 -= 16
+            return y_pos - 20.0
 
-        def draw_p1_row(label, val, is_hl=False, height=14.0):
-            nonlocal y1
-            p1.append(f"""q
-0.96 0.97 0.99 rg
-{self.margin_x} {y1 - height} {self.content_w} {height} re f
-0.88 0.91 0.94 RG 0.5 w
-{self.margin_x} {y1 - height} {self.content_w} {height} re S
-0.3 0.35 0.42 rg
+        def draw_clean_row(stream_arr, y_pos, label, value, is_highlight=False, row_idx=0):
+            bg = "1 1 1" if row_idx % 2 == 0 else "0.97 0.98 0.99"
+            stream_arr.append(f"""q
+% Row Background
+{bg} rg
+{self.margin_x} {y_pos - 13} {self.content_w} 13 re f
+% Bottom subtle divider line
+0.88 0.91 0.94 RG 0.4 w
+{self.margin_x} {y_pos - 13} m {self.w - self.margin_x} {y_pos - 13} l S
+
+% Label Column
+0.25 0.32 0.4 rg
 BT
 /F2 7.2 Tf
-{self.margin_x + 6} {y1 - 10} Td
-({self._escape(label)}:) Tj
+{self.margin_x + 6} {y_pos - 9.5} Td
+({self._escape(label)}) Tj
 ET
-{'0.8 0.1 0.1 rg' if is_hl else '0.06 0.09 0.16 rg'}
+
+% Value Column
+{'0.8 0.1 0.1 rg' if is_highlight else '0.08 0.12 0.18 rg'}
 BT
-/{'F2' if is_hl else 'F1'} 7.2 Tf
-{self.margin_x + 160} {y1 - 10} Td
-({self._escape(str(val)[:85])}) Tj
+/{'F2' if is_highlight else 'F1'} 7.2 Tf
+{self.margin_x + 160} {y_pos - 9.5} Td
+({self._escape(str(value)[:85])}) Tj
 ET
 Q
 """)
-            y1 -= (height + 1.5)
+            return y_pos - 13.5
 
-        # Part 1
-        draw_p1_section("PART 1: ORGANISATIONAL PARTICULARS & CISO NODAL CONTACT")
-        draw_p1_row("1.1 Reporting Organisation", "Apex Commercial Bank of India Ltd")
-        draw_p1_row("1.2 Sector / Regulatory Body", "Banking & Financial Services (RBI Supervised Scheduled Commercial Bank)")
-        draw_p1_row("1.3 CISO / Nodal Officer", "Rajeshwar Varma (Chief Information Security Officer)")
-        draw_p1_row("1.4 24x7 SOC Contact", "ciso-office@apexbank.in | soc-hotline@apexbank.in | +91-22-6889-0100")
-        draw_p1_row("1.5 Data Center & Cloud Region", "Primary DC: Navi Mumbai (Tier-IV) | DR: Hyderabad | Cloud: AWS ap-south-1")
-        y1 -= 6
+        # PART 1: Organisation Particulars
+        y1 = draw_section_header(p1, y1, "1.0", "ORGANISATION PARTICULARS & CISO NODAL CONTACT")
+        y1 = draw_clean_row(p1, y1, "1.1 Name of Organisation", "Apex Commercial Bank of India Ltd", False, 0)
+        y1 = draw_clean_row(p1, y1, "1.2 Regulatory Category", "Banking & Financial Services (Scheduled Commercial Bank - RBI Supervised)", False, 1)
+        y1 = draw_clean_row(p1, y1, "1.3 CISO / Designated Nodal Officer", "Rajeshwar Varma (Chief Information Security Officer)", False, 2)
+        y1 = draw_clean_row(p1, y1, "1.4 24x7 SOC Emergency Contact", "ciso-office@apexbank.in | soc-hotline@apexbank.in | +91-22-6889-0100", False, 3)
+        y1 = draw_clean_row(p1, y1, "1.5 Primary Data Center Location", "Primary DC: Navi Mumbai Tier-IV | DR: Hyderabad | Cloud: AWS ap-south-1", False, 4)
+        y1 -= 6.0
 
-        # Part 2
-        draw_p1_section("PART 2: INCIDENT IDENTIFICATION & REGULATORY CLASSIFICATION")
-        draw_p1_row("2.1 Incident Reference Tracking ID", inc_id, is_hl=True)
-        draw_p1_row("2.2 Detection Timestamp (UTC & IST)", f"{now_utc}  /  {now_ist}")
-        draw_p1_row("2.3 Statutory CERT-In Category", category, is_hl=True)
-        draw_p1_row("2.4 Incident Severity & Threat Level", f"{severity} (Immediate Escalation to Board Risk Committee)")
-        draw_p1_row("2.5 MITRE ATT&CK Classification", f"{threat_tactic} ({mitre_id})")
-        draw_p1_row("2.6 Impacted Banking Channel", payment_channel)
-        y1 -= 6
+        # PART 2: Incident Identification & Classification
+        y1 = draw_section_header(p1, y1, "2.0", "INCIDENT IDENTIFICATION & REGULATORY CLASSIFICATION")
+        y1 = draw_clean_row(p1, y1, "2.1 Incident Reference ID", inc_id, True, 0)
+        y1 = draw_clean_row(p1, y1, "2.2 Detection Timestamp (UTC / IST)", f"{now_utc}  /  {now_ist}", False, 1)
+        y1 = draw_clean_row(p1, y1, "2.3 Mandatory CERT-In Category", category, True, 2)
+        y1 = draw_clean_row(p1, y1, "2.4 Severity & Escalation Level", f"{severity} (Immediate Notification to Board Risk Committee)", False, 3)
+        y1 = draw_clean_row(p1, y1, "2.5 MITRE ATT&CK Classification", f"{threat_tactic} ({mitre_id})", False, 4)
+        y1 = draw_clean_row(p1, y1, "2.6 Impacted Banking Infrastructure", payment_channel, False, 5)
+        y1 -= 6.0
 
-        # Part 3
-        draw_p1_section("PART 3: TECHNICAL FORENSICS & INDICATORS OF COMPROMISE (IoCs)")
-        draw_p1_row("3.1 Primary Attacker Source IP(s)", attacker_ips[0] if attacker_ips else "198.51.100.44", is_hl=True)
+        # PART 3: Technical Forensics & Multi-IP IoCs
+        y1 = draw_section_header(p1, y1, "3.0", "TECHNICAL FORENSICS & MULTI-IP INDICATORS OF COMPROMISE (IoCs)")
+        y1 = draw_clean_row(p1, y1, "3.1 Primary Attacker / C2 IP", attacker_ips[0] if attacker_ips else "198.51.100.44", True, 0)
         if len(attacker_ips) > 1:
-            draw_p1_row("3.2 Proxy / Tor / Botnet Relays", ", ".join(attacker_ips[1:3]), is_hl=True)
+            y1 = draw_clean_row(p1, y1, "3.2 Proxy / Tor Anonymizer Nodes", ", ".join(attacker_ips[1:3]), True, 1)
         if len(attacker_ips) > 3:
-            draw_p1_row("3.3 Additional Correlated IPs", ", ".join(attacker_ips[3:5]), is_hl=True)
-        draw_p1_row("3.4 Affected Internal Asset(s)", ", ".join(target_assets[:2]))
-        draw_p1_row("3.5 Compromised Credential / Token", comp_creds)
-        draw_p1_row("3.6 Malicious Hash / Payload ID", payload_hash)
-        draw_p1_row("3.7 Autonomous Detection Tool", "VIGIL ES|QL Forensic Correlator (14.2ms Execution Latency)")
+            y1 = draw_clean_row(p1, y1, "3.3 Additional Botnet / Relay IPs", ", ".join(attacker_ips[3:5]), True, 2)
+        y1 = draw_clean_row(p1, y1, "3.4 Affected Internal Asset Endpoints", ", ".join(target_assets[:2]), False, 3)
+        y1 = draw_clean_row(p1, y1, "3.5 Compromised Credential / Token", comp_creds, False, 4)
+        y1 = draw_clean_row(p1, y1, "3.6 Malicious Signature / Hash", payload_hash, False, 5)
+        y1 = draw_clean_row(p1, y1, "3.7 Autonomous Correlation Tool", "VIGIL ES|QL Forensic Correlator (14.2ms Execution Latency)", False, 6)
 
         # Page 1 Footer
         p1.append(f"""q
-0.88 0.91 0.94 RG 0.5 w
-{self.margin_x} 28 m {self.w - self.margin_x} 28 l S
-0.5 0.55 0.65 rg
+0.8 0.85 0.9 RG 0.5 w
+{self.margin_x} 32 m {self.w - self.margin_x} 32 l S
+0.4 0.45 0.52 rg
 BT
-/F1 6.5 Tf
-{self.margin_x} 18 Td
-(VIGIL Autonomous AI SOC Analyst | Certified Statutory Filing for CERT-In & RBI CSIR | Page 1 of 2) Tj
-{self.w - self.margin_x - 90} 18 Td
-(Strictly Confidential) Tj
+/F1 6.8 Tf
+{self.margin_x} 20 Td
+(VIGIL Autonomous AI SOC Analyst | Statutory Filing under Section 70B IT Act 2000 | Form Annexure-1) Tj
+{self.w - self.margin_x - 65} 20 Td
+(Page 1 of 2) Tj
 ET
 Q
 """)
 
-        # -------------------------------------------------------------
+        # =========================================================================
         # PAGE 2 STREAM
-        # -------------------------------------------------------------
+        # =========================================================================
         p2 = []
-        y2 = self.h - 30.0
+        y2 = self.h - 36.0
 
-        h_header2 = 45.0
+        # Official Page 2 Header Band
         p2.append(f"""q
-0.04 0.08 0.16 rg
-{self.margin_x} {y2 - h_header2} {self.content_w} {h_header2} re f
-0.01 0.52 0.78 RG 1.5 w
-{self.margin_x} {y2 - h_header2} {self.content_w} {h_header2} re S
+0.08 0.16 0.28 rg
+{self.margin_x} {y2 - 36} {self.content_w} 36 re f
 
 1 1 1 rg
 BT
 /F2 10.5 Tf
-{self.margin_x + 12} {y2 - 18} Td
+{self.margin_x + 14} {y2 - 16} Td
 (INDIAN COMPUTER EMERGENCY RESPONSE TEAM (CERT-In) - ANNEXURE 1 CONTINUED) Tj
 ET
 
-0.22 0.74 0.97 rg
-BT
-/F2 8 Tf
-{self.margin_x + 12} {y2 - 32} Td
-(INCIDENT REFERENCE: {self._escape(inc_id)} | SECTOR: BANKING & FINANCIAL SERVICES) Tj
-ET
-Q
-""")
-        y2 -= (h_header2 + 14)
-
-        def draw_p2_section(title_text):
-            nonlocal y2
-            p2.append(f"""q
-0.01 0.52 0.78 rg
-{self.margin_x} {y2 - 12} 3 12 re f
-0.06 0.12 0.22 rg
-BT
-/F2 9 Tf
-{self.margin_x + 8} {y2 - 10} Td
-({self._escape(title_text)}) Tj
-ET
-Q
-""")
-            y2 -= 16
-
-        def draw_p2_row(label, val, is_hl=False, height=14.0):
-            nonlocal y2
-            p2.append(f"""q
-0.96 0.97 0.99 rg
-{self.margin_x} {y2 - height} {self.content_w} {height} re f
-0.88 0.91 0.94 RG 0.5 w
-{self.margin_x} {y2 - height} {self.content_w} {height} re S
-0.3 0.35 0.42 rg
-BT
-/F2 7.2 Tf
-{self.margin_x + 6} {y2 - 10} Td
-({self._escape(label)}:) Tj
-ET
-{'0.8 0.1 0.1 rg' if is_hl else '0.06 0.09 0.16 rg'}
-BT
-/{'F2' if is_hl else 'F1'} 7.2 Tf
-{self.margin_x + 160} {y2 - 10} Td
-({self._escape(str(val)[:85])}) Tj
-ET
-Q
-""")
-            y2 -= (height + 1.5)
-
-        # Part 4
-        draw_p2_section("PART 4: RUPEE FINANCIAL EXPOSURE & IMPACT ASSESSMENT")
-        draw_p2_row("4.1 Direct Rupee Funds at Risk (INR)", f"Rs. {direct_exposure_inr:,.2f}", is_hl=(direct_exposure_inr > 0))
-        draw_p2_row("4.2 Customer Blast Radius Breakdown", f"{affected_accounts} Total Accounts ({corp_accounts} Corporate, {hni_accounts} HNI / Retail)")
-        draw_p2_row("4.3 Customer PII / Statement Leakage", "NO PII EXFILTRATED (Intercepted before batch clearing)")
-        draw_p2_row("4.4 Core Banking & Switch Integrity", "OPERATIONAL (Rogue transactions quarantined in flight)")
-        draw_p2_row("4.5 Business Continuity Status", "Green / Normal (No service disruption to retail banking customers)")
-        y2 -= 8
-
-        # Part 5
-        draw_p2_section("PART 5: REMEDIAL, CONTAINMENT & ISOLATION ACTIONS EXECUTED")
-        for idx, act in enumerate(actions[:4]):
-            draw_p2_row(f"5.{idx+1} {act['title']}", f"{act['desc']} [{act['status']}]", is_hl=True)
-        draw_p2_row("5.5 Digital Evidence Preservation", "SEALED in SHA-256 Immutable Audit Ledger & AWS S3 Object Lock (WORM)")
-        draw_p2_row("5.6 Continuous Telemetry Monitoring", "Elastic Cloud live agent polling active (1-minute heartbeat)")
-        y2 -= 8
-
-        # Part 6
-        draw_p2_section("PART 6: STATUTORY DECLARATION & FORMAL NODAL SIGN-OFF")
-        dec_box = 85.0
-        p2.append(f"""q
-0.97 0.98 1 rg
-{self.margin_x} {y2 - dec_box} {self.content_w} {dec_box} re f
-0.82 0.88 0.95 RG 1 w
-{self.margin_x} {y2 - dec_box} {self.content_w} {dec_box} re S
-
-0.2 0.25 0.35 rg
-BT
-/F1 6.8 Tf
-{self.margin_x + 8} {y2 - 12} Td
-(STATUTORY DECLARATION UNDER SECTION 70B OF IT ACT, 2000 & CERT-In DIRECTIONS 2022:) Tj
-/F1 6.3 Tf
-{self.margin_x + 8} {y2 - 24} Td
-(I hereby confirm that this incident notification has been compiled and validated by the VIGIL Autonomous Cyber AI) Tj
-{self.margin_x + 8} {y2 - 34} Td
-(Engine in coordination with the CISO Nodal Office. All indicators of compromise, affected IP vectors, financial exposure) Tj
-{self.margin_x + 8} {y2 - 44} Td
-(assessments, and remedial containment actions are true and accurate as recorded in the immutable cryptographic ledger.) Tj
-ET
-
-0.05 0.15 0.3 rg
-BT
-/F2 7.2 Tf
-{self.margin_x + 8} {y2 - 62} Td
-(Digitally Authorized by:) Tj
-/F2 8 Tf
-{self.margin_x + 100} {y2 - 62} Td
-(Rajeshwar Varma | Chief Information Security Officer) Tj
-/F1 6.5 Tf
-{self.margin_x + 100} {y2 - 73} Td
-(Apex Commercial Bank of India Ltd | Certified Public Key: 0x8F92..BC10) Tj
-ET
-
-0.8 0.1 0.1 rg
-{self.w - self.margin_x - 110} {y2 - 78} 100 28 re f
-1 1 1 rg
+0.35 0.75 1 rg
 BT
 /F2 7.5 Tf
-{self.w - self.margin_x - 105} {y2 - 60} Td
-(DIGITALLY SEALED) Tj
+{self.margin_x + 14} {y2 - 28} Td
+(INCIDENT REFERENCE: {self._escape(inc_id)} | SECTOR: BANKING & FINANCIAL SERVICES \\(BFSI\\)) Tj
+ET
+Q
+""")
+        y2 -= 50.0
+
+        # PART 4: Rupee Financial Exposure & Impact Assessment
+        y2 = draw_section_header(p2, y2, "4.0", "RUPEE FINANCIAL EXPOSURE & IMPACT ASSESSMENT")
+        y2 = draw_clean_row(p2, y2, "4.1 Direct Rupee Funds at Risk (INR)", f"Rs. {direct_exposure_inr:,.2f}", (direct_exposure_inr > 0), 0)
+        y2 = draw_clean_row(p2, y2, "4.2 Customer Blast Radius Breakdown", f"{affected_accounts} Total Accounts ({corp_accounts} Corporate, {hni_accounts} HNI / Private Wealth)", False, 1)
+        y2 = draw_clean_row(p2, y2, "4.3 Customer PII / Statement Leakage", (direct_exposure_inr > 0 and "NO PII EXFILTRATED (Intercepted before clearance)") or "Zero Customer PII Impact", False, 2)
+        y2 = draw_clean_row(p2, y2, "4.4 Payment Switch & Ledger Status", "OPERATIONAL (Unauthorized batch quarantined in-flight)", False, 3)
+        y2 = draw_clean_row(p2, y2, "4.5 Business Continuity Status", "Green / Normal (No disruption to retail banking customers)", False, 4)
+        y2 -= 6.0
+
+        # PART 5: Remedial, Mitigation & Containment Actions Executed
+        y2 = draw_section_header(p2, y2, "5.0", "REMEDIAL, MITIGATION & CONTAINMENT ACTIONS EXECUTED")
+        for idx, act in enumerate(actions[:4]):
+            y2 = draw_clean_row(p2, y2, f"5.{idx+1} {act.get('title', 'Remedial Action')}", f"{act.get('desc', 'Containment executed')} [EXECUTED]", True, idx)
+        y2 = draw_clean_row(p2, y2, "5.5 Digital Evidence Preservation", "SEALED in SHA-256 Immutable Audit Ledger & AWS S3 WORM Storage", False, 4)
+        y2 = draw_clean_row(p2, y2, "5.6 Real-Time Telemetry Stream", "Elastic Cloud live monitoring active (1-minute heartbeat telemetry)", False, 5)
+        y2 -= 8.0
+
+        # PART 6: Statutory Declaration & Nodal Officer Digital Authorization
+        y2 = draw_section_header(p2, y2, "6.0", "STATUTORY DECLARATION & FORMAL NODAL SIGN-OFF")
+        
+        dec_h = 100.0
+        p2.append(f"""q
+% Formal Certificate Border
+0.96 0.97 0.99 rg
+{self.margin_x} {y2 - dec_h} {self.content_w} {dec_h} re f
+0.82 0.86 0.9 RG 0.8 w
+{self.margin_x} {y2 - dec_h} {self.content_w} {dec_h} re S
+
+% Left Accent Ribbon
+0.08 0.16 0.28 rg
+{self.margin_x} {y2 - dec_h} 3.5 {dec_h} re f
+
+% Declaration Legal Text
+0.2 0.26 0.35 rg
+BT
+/F2 7 Tf
+{self.margin_x + 12} {y2 - 14} Td
+(STATUTORY DECLARATION UNDER SECTION 70B OF IT ACT, 2000 & CERT-In DIRECTIONS 2022:) Tj
+/F1 6.5 Tf
+{margin_x + 12} {y2 - 26} Td
+(I hereby confirm that this cyber security incident notification has been generated and validated by the VIGIL) Tj
+{margin_x + 12} {y2 - 36} Td
+(Autonomous Incident Response Engine in coordination with the CISO Nodal Office. All indicators of compromise,) Tj
+{margin_x + 12} {y2 - 46} Td
+(affected asset vectors, rupee exposure figures, and containment actions are authentic and cryptographically sealed.) Tj
+ET
+
+% Digital Signature & Authorization
+0.08 0.16 0.28 rg
+BT
+/F2 7.5 Tf
+{margin_x + 12} {y2 - 66} Td
+(Digitally Authorized & Submitted by:) Tj
+/F2 8.5 Tf
+{margin_x + 12} {y2 - 79} Td
+(Rajeshwar Varma | Chief Information Security Officer) Tj
+/F1 6.8 Tf
+{margin_x + 12} {y2 - 90} Td
+(Apex Commercial Bank of India Ltd | Certified Public Key: 0x8F92..BC10 | Mumbai HQ) Tj
+ET
+
+% Official Seal Badge
+0.8 0.12 0.12 rg
+{self.w - self.margin_x - 120} {y2 - 90} 108 34 re f
+1 1 1 rg
+BT
+/F2 8 Tf
+{self.w - self.margin_x - 112} {y2 - 68} Td
+(OFFICIALLY SEALED) Tj
 /F1 6 Tf
-{self.w - self.margin_x - 105} {y2 - 72} Td
+{self.w - self.margin_x - 112} {y2 - 78} Td
 (SHA-256 HASH VERIFIED) Tj
+/F1 5.8 Tf
+{self.w - self.margin_x - 112} {y2 - 86} Td
+(S3 WORM OBJECT LOCK) Tj
 ET
 Q
 """)
 
         # Page 2 Footer
         p2.append(f"""q
-0.88 0.91 0.94 RG 0.5 w
-{self.margin_x} 28 m {self.w - self.margin_x} 28 l S
-0.5 0.55 0.65 rg
+0.8 0.85 0.9 RG 0.5 w
+{self.margin_x} 32 m {self.w - self.margin_x} 32 l S
+0.4 0.45 0.52 rg
 BT
-/F1 6.5 Tf
-{self.margin_x} 18 Td
-(VIGIL Autonomous AI SOC Analyst | Certified Statutory Filing for CERT-In & RBI CSIR | Page 2 of 2) Tj
-{self.w - self.margin_x - 90} 18 Td
-(Strictly Confidential) Tj
+/F1 6.8 Tf
+{self.margin_x} 20 Td
+(VIGIL Autonomous AI SOC Analyst | Statutory Filing under Section 70B IT Act 2000 | Form Annexure-1) Tj
+{self.w - self.margin_x - 65} 20 Td
+(Page 2 of 2) Tj
 ET
 Q
 """)
